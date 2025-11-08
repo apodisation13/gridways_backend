@@ -20,6 +20,7 @@ engine = create_async_engine(
     pool_pre_ping=True  # Проверка соединения перед использованием
 )
 
+
 # Асинхронная сессия
 AsyncSessionLocal = async_sessionmaker(
     engine,
