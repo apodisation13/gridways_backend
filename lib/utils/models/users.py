@@ -1,7 +1,6 @@
+from lib.utils.models import BaseModel
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
-
-from lib.utils.models import BaseModel
 
 
 class User(BaseModel):

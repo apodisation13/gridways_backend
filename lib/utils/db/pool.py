@@ -7,7 +7,7 @@ class Database:
     def __init__(self):
         self.pool = None
 
-    async def connect(self):
+    async def connect(self) -> asyncpg.Pool:
         """Создание пула подключений"""
         if not self.pool:
             self.pool = await asyncpg.create_pool(
@@ -18,31 +18,12 @@ class Database:
             )
         return self.pool
 
-    async def disconnect(self):
+    async def disconnect(self) -> None:
         """Закрытие пула подключений"""
         if self.pool:
             await self.pool.close()
             self.pool = None
 
-    # async def execute(self, query: str, *args):
-    #     """Выполнение запроса"""
-    #     async with self.pool.acquire() as connection:
-    #         return await connection.execute(query, *args)
-    #
-    # async def fetch(self, query: str, *args):
-    #     """Получение нескольких записей"""
-    #     async with self.pool.acquire() as connection:
-    #         return await connection.fetch(query, *args)
-    #
-    # async def fetchrow(self, query: str, *args):
-    #     """Получение одной записи"""
-    #     async with self.pool.acquire() as connection:
-    #         return await connection.fetchrow(query, *args)
-    #
-    # async def fetchval(self, query: str, *args):
-    #     """Получение значения"""
-    #     async with self.pool.acquire() as connection:
-    #         return await connection.fetchval(query, *args)
 
 # Глобальный инстанс БД
 db = Database()

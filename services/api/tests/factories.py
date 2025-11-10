@@ -1,6 +1,6 @@
-from services.api.app.apps.models import User
 import factory
 from factory.alchemy import SQLAlchemyModelFactory
+from services.api.app.apps.models import User
 
 
 class UserFactory(SQLAlchemyModelFactory):

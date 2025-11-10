@@ -2,6 +2,7 @@ import asyncio
 import os
 from logging.config import fileConfig
 
+from alembic.autogenerate import compare_metadata
 from dotenv import load_dotenv
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
@@ -29,6 +30,7 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
+
 def run_migrations_offline():
     """Запуск миграций в offline режиме"""
     url = config.get_main_option("sqlalchemy.url")
@@ -42,11 +44,13 @@ def run_migrations_offline():
     with context.begin_transaction():
         context.run_migrations()
 
+
 def do_run_migrations(connection):
     context.configure(connection=connection, target_metadata=target_metadata)
 
     with context.begin_transaction():
         context.run_migrations()
+
 
 async def run_migrations_online():
     """Запуск миграций в online режиме"""
@@ -63,6 +67,7 @@ async def run_migrations_online():
         await connection.run_sync(do_run_migrations)
 
     await connectable.dispose()
+
 
 if context.is_offline_mode():
     run_migrations_offline()
