@@ -1,5 +1,5 @@
 from lib.utils.config.base import BaseConfig
-from lib.utils.models.base import Base
+from lib.utils.models import Base
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 

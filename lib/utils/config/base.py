@@ -1,14 +1,20 @@
-from enum import StrEnum
 import os
 
 from dotenv import load_dotenv
 
+from lib.utils.config.env_types import EnvType
 
-load_dotenv()
+
+if "CONFIG" not in os.environ:
+    load_dotenv()
 
 
 class BaseConfig:
     """Все настройки через env переменные"""
+    ENV_TYPE: EnvType = EnvType.DEVELOPMENT_LOCAL
+
+    DEBUG: bool = False
+    TESTING: bool = False
 
     # Environment
     CONFIG: str = os.getenv("CONFIG")
@@ -20,31 +26,36 @@ class BaseConfig:
     DB_PORT: int = int(os.getenv("DB_PORT", "5432"))
     DB_NAME: str = os.getenv("DB_NAME")
 
-    DB_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    DB_URL: str = f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 
 class TestingConfig(BaseConfig):
-    ...
+    ENV_TYPE: EnvType = EnvType.TESTING
 
 
 class ProductionConfig(BaseConfig):
-    ...
+    ENV_TYPE: EnvType = EnvType.PRODUCTION
 
 
 class DevelopmentLocalConfig(BaseConfig):
-    ...
+    ENV_TYPE: EnvType = EnvType.DEVELOPMENT_LOCAL
 
 
 class TestsLocalConfig(BaseConfig):
+    load_dotenv()
+
+    ENV_TYPE: EnvType = EnvType.TEST_LOCAL
+
+    DB_USER: str = os.getenv("TEST_DB_USER", "postgres")
+    DB_PASSWORD: str = os.getenv("TEST_DB_PASSWORD")
+    DB_HOST: str = os.getenv("TEST_DB_HOST", "localhost")
+    DB_PORT: int = int(os.getenv("TEST_DB_HOST", "5432"))
+    DB_NAME: str = os.getenv("TEST_DB_NAME", "test_db")
+
+    DB_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
     DEBUG: bool = True
     TESTING: bool = True
-
-
-class EnvType(StrEnum):
-    TESTING = "testing"
-    PRODUCTION = "production"
-    DEVELOPMENT_LOCAL = "development_local"
-    TEST_LOCAL = "test_local"
 
 
 CONFIG_MAP = {
@@ -67,5 +78,5 @@ def get_config() -> BaseConfig:
     return config_class()
 
 
-# # Глобальный инстанс настроек
-# settings = get_config()
+# Глобальный инстанс настроек
+config: BaseConfig = get_config()

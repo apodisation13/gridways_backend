@@ -12,6 +12,7 @@ exclude = [
 include = [
     "lib/**/*.py",
     "services/**/*.py",
+    "migrations/env.py",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -71,14 +72,14 @@ ignore = [
     "RUF001",
     "PYI024",
     # TODO: это бы поправить
-    "N818",     # Exception name should be named with an Error suffix - 138 errors
-    "UP006",    # Use `list` instead of `List` for type annotation - 163 errors
-    "UP035",    # typing.List` is deprecated, use `list` instead - 75 errors
+#    "N818",     # Exception name should be named with an Error suffix - 138 errors
+#    "UP006",    # Use `list` instead of `List` for type annotation - 163 errors
+#    "UP035",    # typing.List` is deprecated, use `list` instead - 75 errors
     "UP045",    #  Use `X | None` for type annotations - 214 errors
-    "S608",     # Possible SQL injection - 69 errors
-    "S603",     # `subprocess` call: check for execution of untrusted input - 4 errors
-    "S324",     # Probable use of insecure hash functions in `hashlib`: `md5` - 5 errors
-    "S311",     # Standard pseudo-random generators are not suitable for cryptographic purposes - 27 errors
+#    "S608",     # Possible SQL injection - 69 errors
+#    "S603",     # `subprocess` call: check for execution of untrusted input - 4 errors
+#    "S324",     # Probable use of insecure hash functions in `hashlib`: `md5` - 5 errors
+#    "S311",     # Standard pseudo-random generators are not suitable for cryptographic purposes - 27 errors
     "RUF100",
     "RUF012",
     "RUF013",

@@ -1,6 +1,8 @@
+from contextlib import asynccontextmanager
+
 import asyncpg
 
-from lib.utils.config.base import BaseConfig
+from lib.utils.config.base import config
 
 
 class Database:
@@ -10,12 +12,14 @@ class Database:
     async def connect(self) -> asyncpg.Pool:
         """Создание пула подключений"""
         if not self.pool:
+            print("STR15--------------------------------", config.DB_URL)
             self.pool = await asyncpg.create_pool(
-                dsn=BaseConfig.DB_URL,  # ← Используем как есть!
+                dsn=config.DB_URL.replace("postgresql+asyncpg://", "postgresql://"),
                 min_size=1,
                 max_size=10,
                 command_timeout=60
             )
+        print("STR22!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         return self.pool
 
     async def disconnect(self) -> None:
@@ -24,6 +28,35 @@ class Database:
             await self.pool.close()
             self.pool = None
 
+    @asynccontextmanager
+    async def connection(self):
+        """Контекстный менеджер для одного подключения"""
+        if not self.pool:
+            await self.connect()
+
+        async with self.pool.acquire() as conn:
+            yield conn
+
+    @asynccontextmanager
+    async def transaction(self):
+        """Контекстный менеджер для транзакции"""
+        async with self.connection() as conn:
+            async with conn.transaction():
+                yield conn
+
 
 # Глобальный инстанс БД
 db = Database()
+
+
+# async def get_db_pool():
+#     """Зависимость для получения самого пула"""
+#     if not db.pool:
+#         print("STR55")
+#         await db.connect()
+#     print("STR57")
+#     return db.pool
+
+
+async def get_db_pool() -> Database:
+    return db

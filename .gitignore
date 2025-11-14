@@ -26,3 +26,4 @@ db.json
 .vscode/launch.json
 .gitignore
 *.http
+*.log

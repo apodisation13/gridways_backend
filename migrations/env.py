@@ -1,22 +1,23 @@
 import asyncio
-import os
 from logging.config import fileConfig
-
-from alembic.autogenerate import compare_metadata
-from dotenv import load_dotenv
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-from sqlalchemy.ext.asyncio import AsyncEngine
-from alembic import context
+import os
 
 # Добавляем корень проекта в PYTHONPATH
 import sys
 
+import asyncpg
+
+from alembic import context
+from dotenv import load_dotenv
 from lib.utils.config.base import BaseConfig
+from sqlalchemy import engine_from_config, pool
+from sqlalchemy.ext.asyncio import AsyncEngine
+
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from lib.utils.models import *  # Импортируем все модели
+from lib.utils.models import *  # noqa: F403
+
 
 load_dotenv()
 
@@ -28,10 +29,10 @@ config.set_main_option("sqlalchemy.url", BaseConfig.DB_URL)
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-target_metadata = Base.metadata
+target_metadata = Base.metadata  # noqa: F405
 
 
-def run_migrations_offline():
+def run_migrations_offline() -> None:
     """Запуск миграций в offline режиме"""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
@@ -45,14 +46,14 @@ def run_migrations_offline():
         context.run_migrations()
 
 
-def do_run_migrations(connection):
+def do_run_migrations(connection: asyncpg.Connection) -> None:
     context.configure(connection=connection, target_metadata=target_metadata)
 
     with context.begin_transaction():
         context.run_migrations()
 
 
-async def run_migrations_online():
+async def run_migrations_online() -> None:
     """Запуск миграций в online режиме"""
     connectable = AsyncEngine(
         engine_from_config(
