@@ -30,5 +30,4 @@ async def test_create_user_2(db_connection):
     result = await db_connection.fetch(
         "SELECT * FROM users;",
     )
-    print(result)
-    print(346543634565356546456)
+    print(33, result)

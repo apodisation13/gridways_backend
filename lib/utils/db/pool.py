@@ -11,7 +11,7 @@ class Database:
 
     async def connect(self) -> asyncpg.Pool:
         """Создание пула подключений"""
-        print("STR14, connect to db")
+        print("STR14, connect to db", config.DB_URL)
         if not self.pool:
             self.pool = await asyncpg.create_pool(
                 dsn=config.DB_URL,
