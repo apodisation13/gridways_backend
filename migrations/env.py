@@ -24,7 +24,8 @@ load_dotenv()
 config = context.config
 
 # Переопределяем URL из alembic.ini нашим конфигом
-config.set_main_option("sqlalchemy.url", BaseConfig.DB_URL)
+url = BaseConfig.DB_URL.replace("postgresql://", "postgresql+asyncpg://")
+config.set_main_option("sqlalchemy.url", url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

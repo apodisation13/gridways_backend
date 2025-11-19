@@ -31,7 +31,6 @@ class Database:
 
     @asynccontextmanager
     async def connection(self):
-
         if not self.pool:
             await self.connect()
 

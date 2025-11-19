@@ -10,5 +10,8 @@ alembic upgrade head
 # Запуск API
 uvicorn services.api.app.main:app --reload --host 0.0.0.0 --port 8001
 
+# Запуск Cron
+python services/cron/app/main.py
+
 # Запуск всех тестов
 pytest -s -v >output.log
