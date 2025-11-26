@@ -33,7 +33,7 @@ class AuthService:
         # auth = [UsersList(id=row['id'], username=row['username'], email="s") for row in result]
         # return [UsersList(**dict(row)) for row in result]
 
-        await event_sender.event(
+        await event_sender.create_event(
             event_type=EventType.EVENT_1,
             payload={"users": dict(result[0]) if result else []},
             config=self.config,

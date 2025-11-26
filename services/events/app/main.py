@@ -6,8 +6,9 @@ import sys
 # Добавляем корневую директорию проекта в Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
+from lib.utils.events.event_consumer import EventConsumer
+
 from services.events.app.config import get_config
-from services.events.app.event_consumer import EventConsumer
 
 
 async def main():

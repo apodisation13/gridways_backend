@@ -1,8 +1,4 @@
-from pydantic import BaseModel, ConfigDict
-
-
-class Base(BaseModel):
-    model_config = ConfigDict(from_attributes=True, extra="forbid")
+from lib.utils.schemas import Base
 
 
 class User(Base):

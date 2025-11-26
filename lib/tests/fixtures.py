@@ -167,6 +167,6 @@ async def db():
 
 @pytest.fixture
 def event_sender_mock():
-    with patch('lib.utils.events.event_sender.event', new_callable=AsyncMock) as mock:
+    with patch('lib.utils.events.event_sender.create_event', new_callable=AsyncMock) as mock:
         mock.return_value = True
         yield mock

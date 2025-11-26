@@ -1,18 +1,31 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Any
+
+from lib.utils.config.base import BaseConfig
+from lib.utils.schemas.events import ActionConfigData
 
 
 class ActionBase(ABC):
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(
+        self,
+        config: BaseConfig,
+        action_config: ActionConfigData,
+        payload: dict,
+    ):
         self.config = config
+        self.action_config = action_config
+        self.payload = payload
 
     @abstractmethod
-    async def execute(self, context: Dict[str, Any]) -> bool:
+    async def execute(
+        self,
+        payload: dict,
+    ) -> None:
         pass
 
-    def check_conditions(self, context: Dict[str, Any]) -> bool:
+    def check_conditions(self) -> bool:
         """Проверка условий выполнения действия"""
-        conditions = self.config.get('conditions', [])
+        conditions = self.action_config.conditions
 
         if isinstance(conditions, bool):
             return conditions

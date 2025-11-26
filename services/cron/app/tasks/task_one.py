@@ -20,7 +20,7 @@ class TaskOne(TaskBase):
             users = await conn.fetch("SELECT * FROM users")
             logger.info(f"Total tasks in database: {len(users)}")
 
-        await event_sender.event(
+        await event_sender.create_event(
             event_type=EventType.EVENT_1,
             payload={"users": users[0]},
             config=self.config,

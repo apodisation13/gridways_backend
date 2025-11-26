@@ -1,4 +1,7 @@
-from sqlalchemy.orm import DeclarativeBase
+from datetime import datetime
+
+from sqlalchemy import Column, func, DateTime
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
@@ -8,3 +11,18 @@ class Base(DeclarativeBase):
 class BaseModel(Base):
     __abstract__ = True
 
+
+class TimestampMixin:
+    """Миксин для полей created_at и updated_at"""
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )

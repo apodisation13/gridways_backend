@@ -1,43 +1,53 @@
 import json
 
 from aiokafka import AIOKafkaProducer
-from jinja2 import Template
-from typing import Dict, Optional, Any
 
-from lib.utils.events.event_types import EventType
+from lib.utils.db.pool import Database
+from lib.utils.events.event_types import EventType, EventProcessingState
+from lib.utils.schemas.events import EventMessage
+from services.events.app.config import Config
 
 
 class EventSender:
-    def __init__(self, config):
+    def __init__(
+        self,
+        config: Config,
+        db: Database,
+    ):
+        self.config = config
+        self.db = db
+
         self._producer = None
         self._initialized = False
-        self.config = config
 
-    async def _ensure_initialized(self):
+
+    async def _ensure_initialized(self) -> None:
         """Инициализирует producer если еще не инициализирован"""
         if not self._initialized:
-            bootstrap_servers = self.config.KAFKA_BOOTSTRAP_SERVERS
             self._producer = AIOKafkaProducer(
-                bootstrap_servers=bootstrap_servers,
+                bootstrap_servers=self.config.KAFKA_BOOTSTRAP_SERVERS,
                 value_serializer=lambda v: json.dumps(v).encode('utf-8')
             )
             await self._producer.start()
             self._initialized = True
 
-    async def event(self, event_type: EventType, payload: Dict):
+    async def send_event(
+        self,
+        event_type: EventType,
+        payload: dict,
+    ) -> None:
         """Отправка события в Kafka"""
         await self._ensure_initialized()
 
-        message = {
-            'event_type': event_type.value if hasattr(event_type, 'value') else event_type,
-            'payload': payload
-        }
+        message = EventMessage(
+            event_type=event_type,
+            payload=payload,
+        )
+        topic = self.config.KAFKA_TOPIC
 
         try:
-            topic = self.config.KAFKA_TOPIC
-            await self._producer.send_and_wait(topic, message)
-            return True
-
+            await self._producer.send_and_wait(topic, message.model_dump(mode="json"))
+            await self._log_event(message=message, payload=payload)
         except Exception as e:
             # При ошибке сбрасываем состояние и пробуем переинициализировать при следующем вызове
             self._initialized = False
@@ -46,37 +56,47 @@ class EventSender:
                 self._producer = None
             raise Exception(f"Failed to send event to Kafka: {e}")
 
-    async def close(self):
-        """Закрытие соединения"""
-        if self._producer and self._initialized:
-            await self._producer.stop()
-            self._initialized = False
+    async def _log_event(
+        self,
+        message: EventMessage,
+        payload: dict,
+    ) -> None:
+        async with self.db.connection() as connection:
+            await connection.execute(
+                """
+                INSERT INTO event_log 
+                (id, type, state, payload)
+                VALUES ($1, $2, $3, $4)
+                """,
+                message.id,
+                message.event_type,
+                EventProcessingState.SENT,
+                json.dumps(payload),
+            )
 
 
-# Глобальный инстанс с ленивой инициализацией
-_event_sender: Optional[EventSender] = None
+# глобальный инстанс сендера
+_event_sender: EventSender | None = None
 
 
-def get_event_sender(config) -> EventSender:
-    """Получить или создать инстанс EventSender"""
+async def get_event_sender(
+    config: Config,
+) -> EventSender:
     global _event_sender
     if _event_sender is None:
-        _event_sender = EventSender(config)
+        db = Database()
+        await db.connect()
+        _event_sender = EventSender(
+            config=config,
+            db=db,
+        )
     return _event_sender
 
 
-async def event(event_type: EventType, payload: Dict, config):
-    """
-    Основная функция для отправки событий.
-    Автоматически инициализирует соединение при первом вызове.
-    """
-    sender = get_event_sender(config)
-    return await sender.event(event_type, payload)
-
-
-def close_event_sender():
-    """Явное закрытие соединения (опционально)"""
-    global _event_sender
-    if _event_sender:
-        _event_sender.close()
-        _event_sender = None
+async def create_event(
+    event_type: EventType,
+    payload: dict,
+    config: Config,
+) -> None:
+    sender: EventSender = await get_event_sender(config)
+    await sender.send_event(event_type=event_type, payload=payload)

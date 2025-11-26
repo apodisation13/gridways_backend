@@ -1,88 +1,109 @@
+import asyncio
 import json
-from typing import Any
+from uuid import UUID
 
+from lib.utils.config.base import BaseConfig
 from lib.utils.db.pool import Database
 from lib.utils.events.actions import ACTION_REGISTRY
+from lib.utils.events.event_types import EventType, EventProcessingState
+from lib.utils.schemas.events import EventMessage, ActionConfigData
 
 
 class EventProcessor:
-    def __init__(self, db: Database):
+    def __init__(
+        self,
+        db: Database,
+        config: BaseConfig,
+    ):
         self.db = db
+        self.config = config
 
-    async def process_event(self, event_data: dict[str, Any]):
-        event_type = event_data['event_type']
-        payload = event_data['payload']
-        # config_data = event_data['config']
-        print("STR14!!!!!!", event_type, payload)
+    async def process_event(
+        self,
+        event_message: EventMessage,
+    ):
+        event_type: EventType = event_message.event_type
+        payload: dict = event_message.payload
+        print("STR24", event_type, payload)
 
-        # Получаем конфигурацию события из БД
+        await self._update_processing_state(
+            event_id=event_message.id,
+            state=EventProcessingState.IN_PROGRESS,
+        )
+
         async with self.db.connection() as conn:
             event_config = await conn.fetchrow(
                 """select processing::jsonb from events where type = $1""",
                 event_type,
             )
-            print("SRT23", type(event_config), event_config)
-            processing_str = event_config['processing']
-            processing = json.loads(processing_str)
-        print("SRT23", type(processing), processing)
+
+            processing: list[ActionConfigData] = [
+                ActionConfigData(
+                    type=item["type"],
+                    conditions=item["conditions"],
+                    receiver=item["receiver"],
+                ) for item in json.loads(event_config['processing'])
+            ]
 
         if not event_config:
             raise ValueError(f"Event config not found for {event_type}")
 
-        # # Создаем запись в логе
-        # log_entry = EventLog(
-        #     event_name=event_type,
-        #     payload=payload,
-        #     status="pending"
-        # )
-        # self.db.add(log_entry)
-        # self.db.commit()
-
         try:
-            # Выполняем действия
-            execution_context = {**payload, 'event_type': event_type}
-            print("STR40", execution_context)
-            # actions_config = event_config.processing.get('actions', [])
-            actions_config = processing
-            print("STR41", actions_config)
-
-            for action_config_data in actions_config:
-                print("STR42", action_config_data)
-                # action_config = ActionConfig(**action_config_data)
+            for action_config_data in processing:
                 await self._execute_action(
-                    action_config_data,
-                    action_type=action_config_data["type"],
-                    context=execution_context,
+                    action_config=action_config_data,
+                    payload=payload,
                 )
 
-            # # Обновляем статус
-            # log_entry.status = "success"
-            # log_entry.execution_context = execution_context
+        except Exception:
+            logger.error(f"Failed to process {event_type}")
+            await self._update_processing_state(
+                event_id=event_message.id,
+                state=EventProcessingState.FAILED,
+            )
+            return
 
-        except Exception as e:
-            # log_entry.status = "failed"
-            # log_entry.error_message = str(e)
-            print("STR48", e)
-        finally:
-            print("STR50!!!!!!!!!!!!!!!!!")
-            # self.db.commit()
+        await self._update_processing_state(
+            event_id=event_message.id,
+            state=EventProcessingState.SUCCESS,
+        )
 
     async def _execute_action(
         self,
-        action_config: dict,
-        action_type: str,
-        context: dict[str, Any],
-    ):
-        action_class = ACTION_REGISTRY.get(action_type)
-        print("STR77", action_class)
+        action_config: ActionConfigData,
+        payload: dict,
+    ) -> None:
+        action_class = ACTION_REGISTRY.get(action_config.type)
+
         if not action_class:
-            raise ValueError(f"Unknown action type: {action_type}")
+            raise ValueError(f"Unknown action type: {action_config.type}")
 
-        action_instance = action_class(config=action_config)  # или передавай конфиг если нужно
-        success = await action_instance.execute(context=context)
+        action_instance = action_class(
+            config=self.config,
+            action_config=action_config,
+            payload=payload,
+        )
 
-        # # action = action_class(action_config.dict())
-        # success = await action_class.execute(context=context)
-
-        if not success:
+        try:
+            if action_instance.check_conditions():
+                await action_instance.execute(payload=payload)
+            else:
+                print(f"failed conditions")
+        except RuntimeError:
             raise Exception(f"Action {action_class} execution failed")
+
+    async def _update_processing_state(
+        self,
+        event_id: UUID,
+        state: EventProcessingState,
+    ) -> None:
+        async with self.db.connection() as connection:
+            await connection.execute(
+                """
+                UPDATE event_log
+                SET state = $2
+                WHERE id = $1
+                """,
+                event_id,
+                state,
+            )
