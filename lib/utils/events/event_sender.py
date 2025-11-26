@@ -1,17 +1,16 @@
 import json
 
 from aiokafka import AIOKafkaProducer
-
+from lib.utils.config.base import BaseConfig
 from lib.utils.db.pool import Database
-from lib.utils.events.event_types import EventType, EventProcessingState
+from lib.utils.events.event_types import EventProcessingState, EventType
 from lib.utils.schemas.events import EventMessage
-from services.events.app.config import Config
 
 
 class EventSender:
     def __init__(
         self,
-        config: Config,
+        config: BaseConfig,
         db: Database,
     ):
         self.config = config
@@ -54,7 +53,7 @@ class EventSender:
             if self._producer:
                 await self._producer.stop()
                 self._producer = None
-            raise Exception(f"Failed to send event to Kafka: {e}")
+            raise Exception(f"Failed to send event to Kafka: {e}") from e
 
     async def _log_event(
         self,
@@ -64,7 +63,7 @@ class EventSender:
         async with self.db.connection() as connection:
             await connection.execute(
                 """
-                INSERT INTO event_log 
+                INSERT INTO event_log
                 (id, type, state, payload)
                 VALUES ($1, $2, $3, $4)
                 """,
@@ -80,11 +79,11 @@ _event_sender: EventSender | None = None
 
 
 async def get_event_sender(
-    config: Config,
+    config: BaseConfig,
 ) -> EventSender:
     global _event_sender
     if _event_sender is None:
-        db = Database()
+        db = Database(config)
         await db.connect()
         _event_sender = EventSender(
             config=config,
@@ -96,7 +95,7 @@ async def get_event_sender(
 async def create_event(
     event_type: EventType,
     payload: dict,
-    config: Config,
+    config: BaseConfig,
 ) -> None:
     sender: EventSender = await get_event_sender(config)
     await sender.send_event(event_type=event_type, payload=payload)

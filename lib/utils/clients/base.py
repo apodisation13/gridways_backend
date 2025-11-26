@@ -1,14 +1,11 @@
-import smtplib
-import ssl
-
-import aiosmtplib
-import requests
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from abc import ABC, abstractmethod
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 import logging
+import smtplib
 
 from lib.utils.config.base import BaseConfig
+import requests
 
 
 logger = logging.getLogger(__name__)
@@ -23,7 +20,6 @@ class BaseClient(ABC):
     @abstractmethod
     async def send(self, to: str, message: str, subject: str | None = None) -> bool:
         """Отправка сообщения"""
-        pass
 
 
 class EmailClient(BaseClient):
@@ -46,11 +42,11 @@ class EmailClient(BaseClient):
                 server.login(self.config.EMAIL_USER, self.config.EMAIL_PASSWORD)
                 server.send_message(msg)
 
-            logger.info(f"Email отправлен на {to}")
+            logger.info("Email отправлен на %s", to)
             return True
 
         except Exception as e:
-            logger.error(f"Ошибка отправки email: {e}")
+            logger.error("Ошибка отправки email: %s", e)
             return False
 
 
@@ -83,11 +79,11 @@ class SmsClient(BaseClient):
                 server.login(self.config.EMAIL_USER, self.config.EMAIL_PASSWORD)
                 server.send_message(msg)
 
-            logger.info(f"SMS отправлено на {to} через email2sms")
+            logger.info("SMS отправлено на %s через email2sms", to)
             return True
 
         except Exception as e:
-            logger.error(f"Ошибка отправки SMS: {e}")
+            logger.error("Ошибка отправки SMS: %s", e)
             return False
 
 
@@ -115,57 +111,12 @@ class TelegramClient(BaseClient):
             result = response.json()
 
             if result.get('ok'):
-                logger.info(f"Сообщение отправлено в Telegram chat_id: {to}")
+                logger.info("Сообщение отправлено в Telegram chat_id: %s", to)
                 return True
             else:
-                logger.error(f"Ошибка Telegram API: {result.get('description')}")
+                logger.error("Ошибка Telegram API: %s", result.get('description'))
                 return False
 
         except Exception as e:
-            logger.error(f"Ошибка отправки в Telegram: {e}")
+            logger.error("Ошибка отправки в Telegram: %s", e)
             return False
-
-
-# # Пример использования
-# if __name__ == "__main__":
-#     # Настройка логирования
-#     logging.basicConfig(level=logging.INFO)
-#
-#     # Конфигурации для разных клиентов
-#     email_config = {
-#         'smtp_server': 'smtp.gmail.com',
-#         'smtp_port': 587,
-#         'username': 'your_email@gmail.com',
-#         'password': 'your_app_password'
-#     }
-#
-#     sms_config = {
-#         'api_key': 'your_sms_api_key',
-#         'api_url': 'https://sms-provider.com/api/send',
-#         'sender_name': 'YourCompany'
-#     }
-#
-#     telegram_config = {
-#         'bot_token': 'your_bot_token_here'
-#     }
-#
-#     try:
-#         # Создание клиентов
-#         email_client = EmailClient(email_config)
-#         sms_client = SmsClient(sms_config)
-#         telegram_client = TelegramClient(telegram_config)
-#
-#         # Отправка тестовых сообщений
-#         test_message = "Тестовое сообщение от системы уведомлений"
-#
-#         # Email (замените на реальный email)
-#         email_client.send("recipient@example.com", test_message, "Тестовое уведомление")
-#
-#         # SMS (замените на реальный номер телефона)
-#         sms_client.send("+79123456789", test_message)
-#
-#         # Telegram (замените на реальный chat_id)
-#         telegram_client.send("123456789", test_message)
-#
-#     except Exception as e:
-#         print(f"Ошибка инициализации клиентов: {e}")

@@ -1,12 +1,12 @@
 import pytest
-import pytest_asyncio
+
 from fastapi import FastAPI
 from httpx import AsyncClient
-
 from lib.utils.db.pool import Database
-
+import pytest_asyncio
+from services.api.app.config import Config, get_config
+from services.api.app.config import get_config as get_app_settings
 from services.api.app.main import app as fastapi_app
-from services.api.app.config import get_config as get_app_settings, get_config, Config
 
 
 @pytest_asyncio.fixture
@@ -16,7 +16,7 @@ async def app(db_pool) -> FastAPI:
     fastapi_app.state.config = get_app_settings()
 
     # Создаем Database обертку используя существующий пул из фикстуры
-    db = Database()
+    db = Database(fastapi_app.state.config)
     # Переопределяем метод connect чтобы использовать существующий пул
     db.pool = db_pool
     fastapi_app.state.db = db

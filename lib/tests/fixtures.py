@@ -1,18 +1,18 @@
+from collections.abc import AsyncGenerator
 import logging.config
 import os
-import sys
-from collections.abc import AsyncGenerator
 import threading
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock, patch
 
 import asyncpg
 import pytest
-import pytest_asyncio
-from sqlalchemy.ext.asyncio import create_async_engine
-from lib.utils.config.base import BaseConfig, get_config
+
+from lib.utils.config.base import BaseConfig, BaseTestLocalConfig, get_config
 from lib.utils.config.env_types import EnvType
 from lib.utils.db.pool import Database
 from lib.utils.models import Base
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import create_async_engine
 
 
 logger = logging.getLogger(__name__)
@@ -54,15 +54,15 @@ async def check_db_connection(
             database=config.DB_NAME
         )
         await conn.close()
-        logger.info(f"✅ Connected to test database '{config.DB_NAME}'")
-    except asyncpg.InvalidCatalogNameError:
-        raise Exception("Can not connect to test database")
+        logger.info("✅ Connected to test database  %s", config.DB_NAME)
+    except asyncpg.InvalidCatalogNameError as e:
+        raise Exception("Can not connect to test database") from e
 
 
 async def apply_migrations(
-    config: BaseConfig,
+    config: BaseTestLocalConfig,
 ) -> None:
-    engine = create_async_engine(config.DB_URL, echo=False)
+    engine = create_async_engine(config.DB_URL_SQL_ALCHEMY, echo=False)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
@@ -71,7 +71,7 @@ async def apply_migrations(
 
 
 async def teardown_db(
-    config: BaseConfig,
+    config: BaseTestLocalConfig,
 ) -> None:
     global _db_setup_done
 
@@ -80,7 +80,7 @@ async def teardown_db(
         if _db_setup_done:
             print()
             logger.info("🧹 Cleaning up database...")
-            engine = create_async_engine(config.DB_URL, echo=False)
+            engine = create_async_engine(config.DB_URL_SQL_ALCHEMY, echo=False)
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.drop_all)
                 logger.info("✅ Tables dropped")
@@ -89,11 +89,11 @@ async def teardown_db(
 
 
 async def create_pool(
-    config: BaseConfig,
+    config: BaseTestLocalConfig,
 ) -> asyncpg.pool.Pool:
     logger.info("🔌 Creating NEW connection pool...")
     db_pool = await asyncpg.create_pool(
-        dsn=config.DB_URL.replace("postgresql+asyncpg://", "postgresql://"),
+        dsn=config.DB_URL,
         min_size=1,
         max_size=10,
         command_timeout=60
@@ -106,8 +106,8 @@ async def clean_data(pool: asyncpg.pool.Pool) -> None:
     async with pool.acquire() as conn:
         tables = await conn.fetch(
             """
-            SELECT tablename 
-            FROM pg_tables 
+            SELECT tablename
+            FROM pg_tables
             WHERE schemaname = 'public'
             """
         )
@@ -160,8 +160,10 @@ async def db_connection(
 
 
 @pytest_asyncio.fixture
-async def db():
-    db_ = Database()
+async def db(
+    config: BaseTestLocalConfig,
+):
+    db_ = Database(config)
     yield db_
 
 

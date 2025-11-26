@@ -18,7 +18,7 @@ class EnvType(StrEnum):
 def get_secret(
     secret_name: str,
     default: str | float | bool = None,
-):
+) -> str:
     if default is not None:
         return default
     return os.getenv(secret_name)

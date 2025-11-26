@@ -1,10 +1,10 @@
 import asyncio
+from contextlib import asynccontextmanager
+import logging.config
 import os
 import signal
-import logging.config
 import sys
-import time
-from contextlib import asynccontextmanager
+from types import FrameType
 
 
 # Добавляем корневую директорию проекта в Python path
@@ -22,7 +22,7 @@ from tasks import TASKS
 class Application:
     def __init__(self):
         self.config = get_config()
-        self.db = Database()
+        self.db = Database(self.config)
         self.scheduler = TaskScheduler(config=self.config, db=self.db)
         self.running = False
         logger = logging.getLogger(__name__)
@@ -61,9 +61,12 @@ class Application:
     def _setup_signal_handlers(self):
         """Настройка обработчиков сигналов для graceful shutdown"""
 
-        def signal_handler(signum, frame):
-            self.logger.info(f"Received signal {signum}, initiating shutdown")
-            asyncio.create_task(self.shutdown())
+        def signal_handler(
+            signum: int,
+            frame: FrameType,
+        ):
+            self.logger.info("Received signal %s, initiating shutdown", signum)
+            asyncio.create_task(self.shutdown())  # noqa: RUF006
 
         signal.signal(signal.SIGTERM, signal_handler)
         signal.signal(signal.SIGINT, signal_handler)
@@ -77,19 +80,14 @@ class Application:
             jobs = self.scheduler.get_scheduled_jobs()
             self.logger.info("Scheduled jobs:")
             for job in jobs:
-                self.logger.info(f"  - {job['name']}: next run at {job['next_run']}")
+                self.logger.info("  - %s: next run at %s}", job['name'], job['next_run'])
 
             # Основной цикл ожидания
             while self.running:
-                # print("STR88, sleeping...")
                 await asyncio.sleep(2)
 
-                # Пример: перезагрузка задач каждые 5 минут
-                # if int(time.time()) % 300 == 0:
-                #     await self.scheduler.reload_tasks()
-
         except Exception as e:
-            self.logger.error(f"Application error: {e}")
+            self.logger.error("Application error: %s" ,e)
         finally:
             if self.running:
                 await self.shutdown()
@@ -106,7 +104,7 @@ async def lifespan():
         await app.shutdown()
 
 
-async def main():
+async def main() -> None:
     """Основная точка входа"""
     app = Application()
     try:

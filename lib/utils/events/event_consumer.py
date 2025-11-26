@@ -2,11 +2,11 @@ import json
 import logging
 
 from aiokafka import AIOKafkaConsumer
-
 from lib.utils.config.base import BaseConfig
 from lib.utils.db.pool import Database
 from lib.utils.events.event_processor import EventProcessor
 from lib.utils.schemas.events import EventMessage
+
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class EventConsumer:
 
     async def start_consuming(self) -> None:
         """Запуск потребителя событий"""
-        db = Database()
+        db = Database(self.config)
         await db.connect()
         self.db = db
 
@@ -55,13 +55,13 @@ class EventConsumer:
                         payload=message_value['payload'],
                     )
                     await self.process_message(event_message)
-                    logger.info(f"Processed event: {event_message.event_type}")
+                    logger.info("Processed event: %s", event_message.event_type)
 
                 except Exception as e:
-                    logger.error(f"Error processing message: {e}")
+                    logger.error("Error processing message: %s", e)
 
         except Exception as e:
-            logger.error(f"Consumer error: {e}")
+            logger.error("Consumer error: %s", e)
         finally:
             await self.stop()
 
@@ -79,7 +79,7 @@ class EventConsumer:
             await processor.process_event(event_message=event_message)
 
         except Exception as e:
-            logger.error(f"Error processing event: {e}")
+            logger.error("Error processing event: %s", e)
         finally:
             await self.db.disconnect()
 

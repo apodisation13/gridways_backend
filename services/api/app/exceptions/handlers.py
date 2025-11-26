@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from services.api.app.exceptions import (
-    ErrorUserAlreadyExists,
+    UserAlreadyExistsError,
 )
 
 
@@ -46,5 +46,5 @@ async def user_already_exists_exception_handler(
 
 def add_exceptions(app: FastAPI) -> FastAPI:
     app.add_exception_handler(Exception, global_exception_handler)
-    app.add_exception_handler(ErrorUserAlreadyExists, user_already_exists_exception_handler)
+    app.add_exception_handler(UserAlreadyExistsError, user_already_exists_exception_handler)
     return app

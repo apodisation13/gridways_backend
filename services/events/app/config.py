@@ -10,6 +10,7 @@ from lib.utils.config.base import (
 )
 from lib.utils.config.env_types import EnvType, get_secret
 
+
 if "CONFIG" not in os.environ:
     load_dotenv()
 

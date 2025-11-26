@@ -1,7 +1,6 @@
 from asyncpg import UniqueViolationError
 
 from fastapi import HTTPException, status
-
 from lib.utils.db.pool import Database
 from lib.utils.events import event_sender
 from lib.utils.events.event_types import EventType
@@ -13,7 +12,7 @@ from services.api.app.apps.auth.lib import (
 )
 from services.api.app.apps.auth.schemas import Token, User, UserLogin, UserRegister
 from services.api.app.config import Config
-from services.api.app.exceptions import ErrorUserAlreadyExists, ErrorUserNotFound
+from services.api.app.exceptions import UserAlreadyExistsError, UserNotFoundError
 
 
 class AuthService:
@@ -51,7 +50,7 @@ class AuthService:
             try:
                 user_id = await conn.fetchval(
                     """
-                    INSERT INTO users 
+                    INSERT INTO users
                     (username, email, password)
                     VALUES ($1, $2, $3)
                     RETURNING id
@@ -61,7 +60,7 @@ class AuthService:
                     hashed_password,
                 )
             except UniqueViolationError as e:
-                raise ErrorUserAlreadyExists(e)
+                raise UserAlreadyExistsError(e) from e
 
         user_model = {
             "id": user_id,
@@ -95,18 +94,18 @@ class AuthService:
             user = await conn.fetchrow(
                 """
                 SELECT
-                    username, 
-                    email, 
+                    username,
+                    email,
                     password
-                FROM 
+                FROM
                     users
-                WHERE 
+                WHERE
                     email = $1
                 """,
                 email,
             )
         if not user:
-            raise ErrorUserNotFound()
+            raise UserNotFoundError()
 
         return UserRegister.model_validate(dict(user))
 
@@ -122,7 +121,7 @@ class AuthService:
     async def get_current_user(
         self,
         token: str,
-    ):
+    ) -> UserRegister:
         email = decode_token(token)
 
         if email is None:

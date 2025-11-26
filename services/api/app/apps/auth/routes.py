@@ -39,8 +39,8 @@ async def login_user(
     return await service.login(user_data=user_data)
 
 
-@router.get("/users/me", response_model=UserRegister)
+@router.get("/users/me")
 async def read_users_me(
     current_user: UserRegister = Depends(auth_dependencies.get_current_user),
-):
+) -> UserRegister:
     return current_user

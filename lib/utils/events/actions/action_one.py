@@ -1,4 +1,3 @@
-from typing import Any
 
 from lib.utils.clients.base import EmailClient, SmsClient, TelegramClient
 from lib.utils.config.base import BaseConfig
@@ -31,8 +30,6 @@ class SendSmsAction(ActionBase):
     ) -> None:
         print("STR19", type(payload), payload)
 
-        raise RuntimeError
-
         receiver_template = self.action_config.receiver
         print("STR35", receiver_template)
         receiver = render_template(receiver_template, payload)
@@ -45,4 +42,4 @@ class SendSmsAction(ActionBase):
 
             print(f"Sending SMS to {receiver}")
         except Exception as e:
-            raise RuntimeError(e)
+            raise RuntimeError(e) from e

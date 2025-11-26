@@ -1,18 +1,14 @@
-import os
+import pytest
 
-print(f"\n🔍 Loading conftest.py from: {os.path.abspath(__file__)}")
-
-
-from lib.tests.fixtures import *
+from lib.tests.fixtures import *  # noqa 403
 
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_setup(item):
-    print(f"\n🚀")
+    print("\n🚀")
 
 
-
-def pytest_report_teststatus(report, config):
+def pytest_report_teststatus(report, config) -> tuple:
     if report.when == 'call':
         if report.passed:
             return "passed", "P", "✅ PASSED\n"

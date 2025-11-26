@@ -7,9 +7,9 @@ async def test_create_user(db_connection, db_pool):
 
     await db_connection.execute(
         """
-            insert into users 
-            (username, password, email) 
-            values ('1', '1', '1') 
+            insert into users
+            (username, password, email)
+            values ('1', '1', '1')
         """,
     )
 

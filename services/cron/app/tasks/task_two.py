@@ -14,9 +14,6 @@ class TaskTwo(TaskBase):
 
         async with self.db.connection() as conn:
             users = await conn.fetch("SELECT * FROM users ORDER BY id DESC LIMIT 1")
-            logger.info(f"TASK2 Total users in database: {users}")
-
-        # for user in users:
-        #     logger.info("TASK2, user %s", user)
+            logger.info("TASK2 Total users in database: %s", users)
 
         logger.info("TASK2 completed successfully")

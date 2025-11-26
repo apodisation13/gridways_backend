@@ -1,12 +1,15 @@
-import asyncio
 import json
+import logging
 from uuid import UUID
 
 from lib.utils.config.base import BaseConfig
 from lib.utils.db.pool import Database
 from lib.utils.events.actions import ACTION_REGISTRY
-from lib.utils.events.event_types import EventType, EventProcessingState
-from lib.utils.schemas.events import EventMessage, ActionConfigData
+from lib.utils.events.event_types import EventProcessingState, EventType
+from lib.utils.schemas.events import ActionConfigData, EventMessage
+
+
+logger = logging.getLogger(__name__)
 
 
 class EventProcessor:
@@ -56,7 +59,7 @@ class EventProcessor:
                 )
 
         except Exception:
-            logger.error(f"Failed to process {event_type}")
+            logger.error("Failed to process %s", event_type)
             await self._update_processing_state(
                 event_id=event_message.id,
                 state=EventProcessingState.FAILED,
@@ -88,9 +91,9 @@ class EventProcessor:
             if action_instance.check_conditions():
                 await action_instance.execute(payload=payload)
             else:
-                print(f"failed conditions")
-        except RuntimeError:
-            raise Exception(f"Action {action_class} execution failed")
+                print("failed conditions")
+        except RuntimeError as e:
+            raise Exception(f"Action {action_class} execution failed") from e
 
     async def _update_processing_state(
         self,

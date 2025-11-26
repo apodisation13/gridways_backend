@@ -1,16 +1,14 @@
 from datetime import UTC, datetime, timedelta
+import hashlib
+import secrets
 
 from jose import ExpiredSignatureError, JWTError, jwt
-from services.api.app.exceptions import ErrorUserIncorrectPassword
+from services.api.app.exceptions import UserIncorrectPasswordError
 
 
 SECRET_KEY = "your-secret-key-here"  # В продакшене используйте надежный ключ
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-
-import hashlib
-import secrets
 
 
 def get_password_hash(
@@ -40,13 +38,13 @@ def verify_password(
     computed_hash = hash_obj.hex()
     res = secrets.compare_digest(computed_hash, stored_hash)
     if not res:
-        raise ErrorUserIncorrectPassword
+        raise UserIncorrectPasswordError
 
 
 def create_access_token(
     data: dict,
     expires_delta_minutes: int = 30,
-):
+) -> str:
     now = datetime.now(UTC)
     expire = now + timedelta(minutes=expires_delta_minutes)
     to_encode = data.copy()

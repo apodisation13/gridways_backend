@@ -1,14 +1,9 @@
-import os
-print(f"\n🔍 Loading conftest.py from: {os.path.abspath(__file__)}")
+import pytest
 
-# # Переопределяем конфиг для тестов
-# os.environ["CONFIG"] = "test_local"
-# print("STR75 set config api")
-
-from lib.tests.fixtures import *
-from services.api.tests.fixtures import *
+from lib.tests.fixtures import *  # noqa 403
+from services.api.tests.fixtures import *  # noqa 403
 
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_setup(item):
-    print(f"\n🚀")
+    print("\n🚀")

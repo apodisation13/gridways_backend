@@ -1,12 +1,12 @@
 from typing import Any
-from uuid import UUID, uuid4
-
-from sqlalchemy import Integer, String, func, text
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
-from sqlalchemy.orm import Mapped, mapped_column
+from uuid import UUID
 
 from lib.utils.models import BaseModel
 from lib.utils.models.base import TimestampMixin
+from sqlalchemy import Integer, String, text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 class Event(BaseModel):
