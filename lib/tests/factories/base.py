@@ -9,12 +9,12 @@ class AsyncFactory(factory.Factory):
     """Базовая асинхронная фабрика"""
 
     @classmethod
-    async def create_async(cls, **kwargs):
+    async def create_async(cls, **kwargs) -> object:
         """Асинхронное создание объекта"""
         return cls.build(**kwargs)
 
     @classmethod
-    async def create_batch_async(cls, size, **kwargs):
+    async def create_batch_async(cls, size, **kwargs) -> list:
         """Асинхронное создание нескольких объектов"""
         return [await cls.create_async(**kwargs) for _ in range(size)]
 
@@ -30,7 +30,7 @@ class BaseModelFactory(AsyncFactory):
     # updated_at = factory.Faker('date_time_this_month')
 
     @classmethod
-    async def create_in_db(cls, conn, **kwargs):
+    async def create_in_db(cls, conn, **kwargs) -> dict:
         """Создание объекта в БД"""
         obj = cls.build(**kwargs)
 
@@ -50,7 +50,7 @@ class BaseModelFactory(AsyncFactory):
             INSERT INTO {table_name} ({', '.join(columns)})
             VALUES ({', '.join(placeholders)})
             RETURNING *
-        """
+        """   # noqa: S608
 
         result = await conn.fetchrow(query, *values)
         return dict(result)

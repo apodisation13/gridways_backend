@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
+import logging.config
 import os
+from pathlib import Path
 import subprocess
 import sys
-import logging.config
-from pathlib import Path
+
 
 # Добавляем корневую директорию проекта в Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
-
 from services.migrant.app.config import get_config
+
 
 config = get_config()
 logger = logging.getLogger(__name__)
 logging.config.dictConfig(config.LOGGING)
 
 
-def run_migrations():
+def run_migrations() -> bool:
     try:
         logger.info("Запуск миграций базы данных...")
 
@@ -30,7 +31,7 @@ def run_migrations():
         logger.info("Применение миграций...")
 
         # Используем subprocess для большего контроля
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603
             [sys.executable, '-m', 'alembic', '-c', str(alembic_ini_path), 'upgrade', 'head'],
             capture_output=True,
             text=True,
@@ -41,7 +42,7 @@ def run_migrations():
         if result.stdout:
             logger.info("STDOUT: %s", result.stdout)
         if result.stderr:
-            logger.info(f"STDERR: %s", result.stderr)
+            logger.info("STDERR: %s", result.stderr)
 
         if result.returncode == 0:
             logger.info("Миграции успешно выполнены")

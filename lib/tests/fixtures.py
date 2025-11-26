@@ -1,18 +1,18 @@
+from collections.abc import AsyncGenerator
 import logging.config
 import os
-import sys
-from collections.abc import AsyncGenerator
 import threading
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock, patch
 
 import asyncpg
 import pytest
-import pytest_asyncio
-from sqlalchemy.ext.asyncio import create_async_engine
-from lib.utils.config.base import BaseConfig, get_config, BaseTestLocalConfig
+
+from lib.utils.config.base import BaseConfig, BaseTestLocalConfig, get_config
 from lib.utils.config.env_types import EnvType
 from lib.utils.db.pool import Database
 from lib.utils.models import Base
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import create_async_engine
 
 
 logger = logging.getLogger(__name__)
@@ -54,9 +54,9 @@ async def check_db_connection(
             database=config.DB_NAME
         )
         await conn.close()
-        logger.info(f"✅ Connected to test database '{config.DB_NAME}'")
-    except asyncpg.InvalidCatalogNameError:
-        raise Exception("Can not connect to test database")
+        logger.info("✅ Connected to test database  %s", config.DB_NAME)
+    except asyncpg.InvalidCatalogNameError as e:
+        raise Exception("Can not connect to test database") from e
 
 
 async def apply_migrations(
@@ -106,8 +106,8 @@ async def clean_data(pool: asyncpg.pool.Pool) -> None:
     async with pool.acquire() as conn:
         tables = await conn.fetch(
             """
-            SELECT tablename 
-            FROM pg_tables 
+            SELECT tablename
+            FROM pg_tables
             WHERE schemaname = 'public'
             """
         )

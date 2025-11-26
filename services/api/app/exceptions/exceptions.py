@@ -1,10 +1,10 @@
-class ErrorUserAlreadyExists(Exception):
+class UserAlreadyExistsError(Exception):
     pass
 
 
-class ErrorUserNotFound(Exception):
+class UserNotFoundError(Exception):
     pass
 
 
-class ErrorUserIncorrectPassword(Exception):
+class UserIncorrectPasswordError(Exception):
     pass

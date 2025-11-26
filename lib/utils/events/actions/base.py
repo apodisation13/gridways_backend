@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Any
 
 from lib.utils.config.base import BaseConfig
 from lib.utils.schemas.events import ActionConfigData

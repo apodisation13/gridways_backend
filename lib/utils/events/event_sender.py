@@ -1,12 +1,10 @@
 import json
 
 from aiokafka import AIOKafkaProducer
-
 from lib.utils.config.base import BaseConfig
 from lib.utils.db.pool import Database
-from lib.utils.events.event_types import EventType, EventProcessingState
+from lib.utils.events.event_types import EventProcessingState, EventType
 from lib.utils.schemas.events import EventMessage
-
 
 
 class EventSender:
@@ -55,7 +53,7 @@ class EventSender:
             if self._producer:
                 await self._producer.stop()
                 self._producer = None
-            raise Exception(f"Failed to send event to Kafka: {e}")
+            raise Exception(f"Failed to send event to Kafka: {e}") from e
 
     async def _log_event(
         self,
@@ -65,7 +63,7 @@ class EventSender:
         async with self.db.connection() as connection:
             await connection.execute(
                 """
-                INSERT INTO event_log 
+                INSERT INTO event_log
                 (id, type, state, payload)
                 VALUES ($1, $2, $3, $4)
                 """,

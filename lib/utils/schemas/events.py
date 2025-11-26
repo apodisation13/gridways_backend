@@ -1,9 +1,8 @@
 from uuid import UUID, uuid4
 
-from pydantic import Field, ConfigDict, model_serializer
-
 from lib.utils.events.event_types import EventType
 from lib.utils.schemas import Base
+from pydantic import Field, model_serializer
 
 
 class EventMessage(Base):

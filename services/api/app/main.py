@@ -1,10 +1,9 @@
-import logging.config
 from contextlib import asynccontextmanager
+import logging.config
 
 from fastapi import FastAPI
 from lib.utils.db.pool import Database
 from services.api.app.apps.api_docs.routes import router as swagger_router
-
 from services.api.app.apps.auth.routes import router as users_router
 from services.api.app.config import get_config as get_app_settings
 from services.api.app.dependencies import set_global_app

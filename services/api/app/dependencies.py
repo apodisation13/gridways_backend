@@ -1,5 +1,7 @@
 from fastapi import Depends, FastAPI
+from lib.utils.db.pool import Database
 from services.api.app.apps.auth.service import AuthService
+from services.api.app.config import Config
 
 
 # Глобальная переменная для доступа к app
@@ -8,23 +10,23 @@ _app: FastAPI = None
 
 def set_global_app(
     app: FastAPI,
-):
+) -> None:
     global _app
     _app = app
 
 
-async def get_config():
+async def get_config() -> Config:
     return _app.state.config
 
 
-async def get_db():
+async def get_db() -> Database:
     return _app.state.db
 
 
 async def get_auth_service(
-    db_pool = Depends(get_db),
-    config = Depends(get_config),
-):
+    db_pool: Database = Depends(get_db),
+    config: Config = Depends(get_config),
+) -> AuthService:
     return AuthService(
         db_pool=db_pool,
         config=config,

@@ -1,12 +1,12 @@
 from services.api.app.exceptions.exceptions import (
-    ErrorUserAlreadyExists,
-    ErrorUserIncorrectPassword,
-    ErrorUserNotFound,
+    UserAlreadyExistsError,
+    UserIncorrectPasswordError,
+    UserNotFoundError,
 )
 
 
 __all__ = [
-    "ErrorUserAlreadyExists",
-    "ErrorUserIncorrectPassword",
-    "ErrorUserNotFound",
+    "UserAlreadyExistsError",
+    "UserIncorrectPasswordError",
+    "UserNotFoundError",
 ]

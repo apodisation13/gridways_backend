@@ -1,12 +1,12 @@
 import pytest
-import pytest_asyncio
+
 from fastapi import FastAPI
 from httpx import AsyncClient
-
 from lib.utils.db.pool import Database
-
+import pytest_asyncio
+from services.api.app.config import Config, get_config
+from services.api.app.config import get_config as get_app_settings
 from services.api.app.main import app as fastapi_app
-from services.api.app.config import get_config as get_app_settings, get_config, Config
 
 
 @pytest_asyncio.fixture

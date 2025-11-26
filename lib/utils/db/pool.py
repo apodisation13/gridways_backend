@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
+import logging
 
 import asyncpg
-import logging
 
 from lib.utils.config.base import BaseConfig
 
