@@ -2,20 +2,20 @@ name: CI/CD Pipeline
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, testing ]
   push:
-    branches: [ main ]
+    branches: [ main, testing ]
 
 jobs:
   validate-pr-to-main:
     if: github.base_ref == 'main'
     runs-on: ubuntu-latest
     steps:
-      - name: Check if PR to main is from testing branch
+      - name: Check PR to main is from testing
         run: |
           if [ "${{ github.head_ref }}" != "testing" ]; then
-            echo "❌ PR to main can only be created from testing branch"
-            echo "Current source branch: ${{ github.head_ref }}"
+            echo "❌ PR to main can only be from testing branch"
+            echo "Current source: ${{ github.head_ref }}"
             exit 1
           fi
           echo "✅ Valid PR: main ← testing"
