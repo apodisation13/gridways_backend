@@ -6,17 +6,8 @@ from lib.utils.schemas.events import ActionConfigData
 
 
 class SendSmsAction(ActionBase):
-    def __init__(
-        self,
-        config: BaseConfig,
-        action_config: ActionConfigData,
-        payload: dict,
-    ) -> None:
-        super().__init__(
-            config=config,
-            payload=payload,
-            action_config=action_config,
-        )
+    def __init__(self, config: BaseConfig, action_config: ActionConfigData, payload: dict) -> None:
+        super().__init__(config=config, payload=payload, action_config=action_config)
 
         self.email_client = EmailClient(config)
         self.sms_client = SmsClient(config)
