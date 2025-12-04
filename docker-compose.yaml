@@ -1,9 +1,37 @@
+# Общие настройки для всех сервисов
+x-common: &common
+  networks:
+    - app-network
+  env_file:
+    - ./.env.local  # Все сервисы читают корневой .env файл
+
 services:
+  # ============ БАЗОВЫЕ СЕРВИСЫ ============
+  postgres:
+    <<: *common
+    image: postgres:15-alpine
+    container_name: gridways-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   kafka:
+    <<: *common
     image: confluentinc/cp-kafka:latest
     ports:
       - "9092:9092"
       - "9093:9093"
+    container_name: gridways-kafka
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
@@ -18,3 +46,100 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+
+  # ============ МИКРОСЕРВИСЫ ============
+  migrant:
+    <<: *common
+    container_name: gridways-migrant
+    build:
+      context: .
+      dockerfile: services/migrant/docker/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *common
+    container_name: gridways-api
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: services/api/docker/Dockerfile
+    ports:
+      - "8001:8001"
+    depends_on:
+      - migrant
+
+#  cron:
+#    <<: *common
+#    container_name: ${PROJECT_NAME:-app}-cron
+#    build:
+#      <<: *build
+#      args:
+#        SERVICE_NAME: cron
+#    environment:
+#      SERVICE_NAME: cron
+#      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+#      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+#    depends_on:
+#      - postgres
+#      - kafka
+#    command: ${CRON_COMMAND:-python app/main.py}
+#
+#  events:
+#    <<: *common
+#    container_name: ${PROJECT_NAME:-app}-events
+#    build:
+#      <<: *build
+#      args:
+#        SERVICE_NAME: events
+#    environment:
+#      SERVICE_NAME: events
+#      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+#      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+#    depends_on:
+#      - postgres
+#      - kafka
+#    command: ${EVENTS_COMMAND:-python app/main.py}
+#
+#  rest:
+#    <<: *common
+#    container_name: ${PROJECT_NAME:-app}-rest
+#    build:
+#      <<: *build
+#      args:
+#        SERVICE_NAME: rest
+#    environment:
+#      SERVICE_NAME: rest
+#      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+#      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-app.settings}
+#      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+#      DJANGO_DEBUG: ${DJANGO_DEBUG:-false}
+#    ports:
+#      - "${REST_PORT:-8002}:8000"
+#    depends_on:
+#      - postgres
+#      - migrant
+#    command: ${REST_COMMAND:-gunicorn app.wsgi:application --bind 0.0.0.0:8000 --workers 4}
+#
+#  nginx:
+#    <<: *common
+#    image: nginx:1.25-alpine
+#    container_name: ${PROJECT_NAME:-app}-nginx
+#    ports:
+#      - "${NGINX_PORT:-80}:80"
+#    volumes:
+#      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+#      - static_volume:/app/static:ro
+#      - media_volume:/app/media:ro
+#    depends_on:
+#      - rest
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+#  static_volume:
+#  media_volume:

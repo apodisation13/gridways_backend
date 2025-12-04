@@ -41,6 +41,13 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+def include_object(object, name, type_, reflected, compare_to):
+    # Игнорируем все объекты начинающиеся с django_ или auth_
+    if name and (name.startswith('django_') or name.startswith('auth_')):
+        return False
+    return True
+
+
 def run_migrations_offline() -> None:
     """Запуск миграций в offline режиме"""
     url = config.get_main_option("sqlalchemy.url")
@@ -56,7 +63,11 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: asyncpg.Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        include_object=include_object,
+    )
 
     with context.begin_transaction():
         context.run_migrations()

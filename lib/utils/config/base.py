@@ -21,7 +21,7 @@ class BaseConfig:
     # Database
     DB_USER: str = get_secret("DB_USER")
     DB_PASSWORD: str = get_secret("DB_PASSWORD")
-    DB_HOST: str = get_secret("DB_USER", default="localhost")
+    DB_HOST: str = get_secret("DB_HOST", default="localhost")
     DB_PORT: int = int(get_secret("DB_PORT", default=5432))
     DB_NAME: str = get_secret("DB_NAME")
     DB_URL: str = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
