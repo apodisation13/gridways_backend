@@ -8,10 +8,18 @@ SECRET_KEY = "django-insecure-your-secret-key-change-this!"  # В продакш
 DEBUG = True
 
 # ALLOWED_HOSTS = []
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'rest', 'nginx']
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    "rest",
+    "nginx",
+]
 
 # Настройте CSRF
-CSRF_TRUSTED_ORIGINS = ['http://localhost:8001', 'http://127.0.0.1:8001']
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8001",
+    "http://127.0.0.1:8001",
+]
 
 # Security settings
 SECURE_BROWSER_XSS_FILTER = True
