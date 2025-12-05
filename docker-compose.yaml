@@ -1,9 +1,16 @@
+# ПРОБЛЕМА:
+#    ${VARIABLE} подстановка происходит ДО запуска контейнера - Docker Compose читает эти переменные из:
+#        Файла .env в корне проекта (по умолчанию)
+#        Системных переменных окружения
+#    env_file загружает переменные ВНУТРЬ контейнера, но НЕ для подстановки в docker-compose.yml
+
+
 # Общие настройки для всех сервисов
 x-common: &common
   networks:
     - app-network
   env_file:
-    - ./.env.local  # Все сервисы читают корневой .env файл
+    - ./.env.docker
 
 services:
   # ============ БАЗОВЫЕ СЕРВИСЫ ============
@@ -12,13 +19,17 @@ services:
     image: postgres:15-alpine
     container_name: gridways-postgres
     environment:
+      # вот это будет считываться по умолчанию из файла .env, или из того, который передать ПРИ СТАРТЕ
+      # docker-compose --env-file .env.docker up --build
+      # проверка что в контейнере с постгресом: docker-compose exec postgres env | grep POSTGRES
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - docker_postgres_data:/var/lib/postgresql/data
+    # вот это порт, который будет торчать наружу
     ports:
-      - "${DB_PORT}:5432"
+      - "${DB_PORT_OUTSIDE}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
       interval: 10s
@@ -108,46 +119,31 @@ services:
       timeout: 10s
       retries: 3
 
+  cron:
+    <<: *common
+    container_name: gridways-cron
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: services/cron/docker/Dockerfile
+    depends_on:
+      - migrant
 
-#  cron:
-#    <<: *common
-#    container_name: ${PROJECT_NAME:-app}-cron
-#    build:
-#      <<: *build
-#      args:
-#        SERVICE_NAME: cron
-#    environment:
-#      SERVICE_NAME: cron
-#      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-#      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-#    depends_on:
-#      - postgres
-#      - kafka
-#    command: ${CRON_COMMAND:-python app/main.py}
-#
-#  events:
-#    <<: *common
-#    container_name: ${PROJECT_NAME:-app}-events
-#    build:
-#      <<: *build
-#      args:
-#        SERVICE_NAME: events
-#    environment:
-#      SERVICE_NAME: events
-#      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-#      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-#    depends_on:
-#      - postgres
-#      - kafka
-#    command: ${EVENTS_COMMAND:-python app/main.py}
-#
-
+  events:
+    <<: *common
+    container_name: gridways-events
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: services/events/docker/Dockerfile
+    depends_on:
+      - migrant
 
 networks:
   app-network:
     driver: bridge
 
 volumes:
-  postgres_data:
+  docker_postgres_data:
   static_volume:
   media_volume:

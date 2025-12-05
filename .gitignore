@@ -4,7 +4,7 @@ venv/
 
 # Environments
 *.env
-.env.local
+.env.docker
 ../.DS_Store
 ../documents/.DS_Store
 
