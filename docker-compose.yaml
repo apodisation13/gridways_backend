@@ -99,8 +99,13 @@ services:
     container_name: gridways-elk
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+
+#      - xpack.security.enabled=false
+      - xpack.security.enabled=true
+      - xpack.security.authc.api_key.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+
       # Отключаем логи Elasticsearch
       - logger.level=ERROR  # Изменили с WARN на ERROR
       - logger.org.elasticsearch=ERROR
@@ -108,17 +113,13 @@ services:
       - logger.action=ERROR
       - logger.org.elasticsearch.cluster.service=ERROR
       - logger.org.elasticsearch.indices=ERROR
-#    environment:
-#      - discovery.type=single-node
-#      - xpack.security.enabled=false
-#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-#      - logger.level=WARN
     ports:
       - "9200:9200"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     healthcheck: # ⬅️ ДОБАВЬТЕ HEALTHCHECK!
-      test: [ "CMD", "curl", "-f", "http://localhost:9200" ]
+#      test: [ "CMD", "curl", "-f", "http://localhost:9200" ]
+      test: ["CMD-SHELL", "curl -f -u elastic:${ELASTIC_PASSWORD} http://localhost:9200 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -134,10 +135,15 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - SERVER_HOST=0.0.0.0
       - NODE_OPTIONS="--max-old-space-size=512"
+
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=KibanaPassword123!
+
       # Отключаем логи Kibana
       - LOGGING_QUIET=true  # Тихий режим
       - LOGGING_VERBOSE=false
       - LOGGING_ROOT_LEVEL=error  # Только ошибки
+
       # Отключаем конкретные логгеры Kibana
       - logging.loggers[0].name=elasticsearch
       - logging.loggers[0].level=error
@@ -149,11 +155,7 @@ services:
       - logging.loggers[3].level=error
       - logging.loggers[4].name=plugins.observability
       - logging.loggers[4].level=error
-#    environment:
-#      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-#      - SERVER_HOST=0.0.0.0
-#      - NODE_OPTIONS="--max-old-space-size=512"
-#      - logging.verbose=false
+
     depends_on:
       elasticsearch:
         condition: service_healthy  # ⬅️ ЖДЕМ ЗДОРОВЬЯ ES
