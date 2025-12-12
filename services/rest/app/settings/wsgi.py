@@ -12,7 +12,6 @@ def init_app():
     from lib.utils.elk.elastic_logger import ElasticLoggerManager
     from services.rest.app.config import Config, get_config
 
-
     config: Config = get_config()
 
     logging.config.dictConfig(config.LOGGING)

@@ -7,6 +7,7 @@ import sys
 
 from lib.utils.elk.elastic_logger import ElasticLoggerManager
 
+
 # Добавляем корневую директорию проекта в Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 from services.migrant.app.config import get_config
