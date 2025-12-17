@@ -11,6 +11,7 @@ from services.api.app.config import get_config as get_app_settings
 from services.api.app.dependencies import set_global_app
 from services.api.app.exceptions.handlers import add_exceptions
 from services.api.app.middlewares import set_middlewares
+from services.api.app.staticfiles import mount_static
 
 
 apm_manager = ElasticTracerManager()
@@ -59,6 +60,7 @@ app = FastAPI(
 
 add_exceptions(app)
 set_middlewares(app, config, apm_manager)
+mount_static(app, config)
 
 
 app.include_router(swagger_router, prefix="", tags=["swagger"])

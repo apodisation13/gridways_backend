@@ -20,6 +20,7 @@ class UserAdmin(admin.ModelAdmin):
         "username",
         "email",
         "is_active",
+        "image",
     )
     readonly_fields = (
         "id",

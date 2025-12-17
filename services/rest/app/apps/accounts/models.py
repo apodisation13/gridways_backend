@@ -26,6 +26,12 @@ class User(models.Model):
     username = models.CharField(max_length=50, blank=False, null=False, verbose_name="Ник пользователя")
     password = models.CharField(max_length=255, blank=False, null=False, verbose_name="Пароль")
     is_active = models.BooleanField(default=True, verbose_name="Активный")
+    image = models.ImageField(
+        upload_to="avatars/",
+        verbose_name="Картинка",
+        blank=True,
+        null=True,
+    )
 
     def __str__(self) -> str:
         return f"Пользователь {self.pk}: {self.username} - {self.email}"

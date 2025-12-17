@@ -11,6 +11,7 @@ class User(BaseModel):
     username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     password: Mapped[str] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(server_default="true")
+    image: Mapped[str] = mapped_column(String(255), nullable=True)
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, username='{self.username}')>"

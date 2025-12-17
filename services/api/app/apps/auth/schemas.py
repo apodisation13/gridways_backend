@@ -5,6 +5,7 @@ class User(Base):
     id: int
     username: str
     email: str
+    image: str | None
 
 
 class UserRegister(Base):

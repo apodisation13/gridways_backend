@@ -36,13 +36,15 @@ class TestingConfig(BaseTestingConfig, Config): ...
 class ProductionConfig(BaseProductionConfig, Config): ...
 
 
-class DevelopmentLocalConfig(BaseDevelopmentLocalConfig, Config): ...
+class DevelopmentLocalConfig(BaseDevelopmentLocalConfig, Config):
+    DEBUG = True
 
 
 class TestLocalConfig(BaseTestLocalConfig, Config): ...
 
 
-class DockerLocalConfig(BaseDockerLocalConfig, Config): ...
+class DockerLocalConfig(BaseDockerLocalConfig, Config):
+    DEBUG = False
 
 
 CONFIG_MAP = {

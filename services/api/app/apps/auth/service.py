@@ -27,7 +27,7 @@ class AuthService:
     async def get_users(self) -> list[User]:
         print("STR28!!!!!!!!!!!!!!!!!!!!", self.config.AAA)
         async with self.db_pool.connection() as conn:
-            result = await conn.fetch("""select id, username, email from users""")
+            result = await conn.fetch("""select id, username, email, image from users""")
 
         # accounts = [UsersList(id=row['id'], username=row['username'], email="s") for row in result]
         # return [UsersList(**dict(row)) for row in result]
@@ -40,7 +40,19 @@ class AuthService:
             config=self.config,
         )
 
-        return [User.model_validate(dict(row)) for row in result]
+        user_dict = [
+            User.model_validate(
+                {
+                    "id": row["id"],
+                    "username": row["username"],
+                    "email": row["email"],
+                    "image": f"media/{row['image']}" if row["image"] else None,
+                }
+            )
+            for row in result
+        ]
+
+        return user_dict
 
     async def register_user(
         self,
