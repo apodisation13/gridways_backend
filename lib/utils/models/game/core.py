@@ -31,6 +31,14 @@ class Faction(BaseModel):
         "Card",
         back_populates="faction",
     )
+    enemies: Mapped[list["Enemy"]] = relationship(
+        "Enemy",
+        back_populates="faction",
+    )
+    enemy_leaders: Mapped[list["EnemyLeader"]] = relationship(
+        "EnemyLeader",
+        back_populates="faction",
+    )
 
     def __repr__(self) -> str:
         return f"<Faction(id={self.id}, name='{self.name}')>"
@@ -54,6 +62,10 @@ class Color(BaseModel):
 
     cards: Mapped[list["Card"]] = relationship(
         "Card",
+        back_populates="color",
+    )
+    enemies: Mapped[list["Enemy"]] = relationship(
+        "Enemy",
         back_populates="color",
     )
 
