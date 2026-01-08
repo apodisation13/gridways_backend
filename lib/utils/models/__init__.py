@@ -3,6 +3,7 @@ from .events import Event, EventLog
 from .game.cards import Ability, PassiveAbility, Type
 from .game.core import Color, Faction, GameConstants
 from .game.enemies import Move, EnemyLeaderAbility, EnemyPassiveAbility, Deathwish
+from .game.progress import UserResource
 from .game.seasons import Season, Level, LevelEnemy, LevelRelatedLevels
 from .news import News
 from .tasks import CronTask
@@ -32,4 +33,5 @@ __all__ = [
     "TimestampMixin",
     "Type",
     "User",
+    "UserResource",
 ]

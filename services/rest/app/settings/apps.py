@@ -20,6 +20,7 @@ APPS = [
     "apps.events.apps.EventsConfig",
     "apps.news.apps.NewsConfig",
     "apps.seasons.apps.SeasonsConfig",
+    "apps.user_progress.apps.UserProgressConfig",
 ]
 
 
