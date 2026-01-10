@@ -1,3 +1,4 @@
+import json
 from contextlib import asynccontextmanager
 import logging
 
@@ -14,6 +15,15 @@ class Database:
         self.pool = None
         self.config = config
 
+    async def init_connection(self, conn):
+        # Регистрируем кодек для jsonb
+        await conn.set_type_codec(
+            'jsonb',
+            encoder=lambda v: json.dumps(v),  # Python -> JSONB
+            decoder=lambda v: json.loads(v),  # JSONB -> Python
+            schema='pg_catalog'
+        )
+
     async def connect(self) -> asyncpg.Pool:
         if not self.pool:
             self.pool = await asyncpg.create_pool(
@@ -21,6 +31,7 @@ class Database:
                 min_size=1,
                 max_size=10,
                 command_timeout=60,
+                init=self.init_connection,
             )
         logger.info("Connected to db")
         return self.pool
