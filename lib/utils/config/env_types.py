@@ -39,25 +39,25 @@ def get_secret(
         return default
 
     try:
-        if cast == bool:
+        if isinstance(cast, bool):
             if value.lower() == 'true':
                 return True
             elif value.lower() == 'false':
                 return False
             else:
                 raise ValueError(f"Cannot convert '{value}' to bool")
-        elif cast == int:
+        elif isinstance(cast, int):
             return int(value)
-        elif cast == float:
+        elif isinstance(cast, float):
             return float(value)
-        elif cast == str:
+        elif isinstance(cast, str):
             return value
         else:
             raise ValueError(f"Unsupported type: {cast}")
     except (ValueError, TypeError) as e:
         if default is not None:
             return default
-        raise ValueError(f"Failed to convert secret '{secret_name}' to {cast}: {e}")
+        raise ValueError(f"Failed to convert secret '{secret_name}' to {cast}: {e}") from e
 
 
 def load_env():
