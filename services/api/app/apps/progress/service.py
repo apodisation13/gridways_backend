@@ -96,7 +96,6 @@ class UserProgressService:
         print(type(game_constants), game_constants)
         return game_constants
 
-
     async def _process_enemies(
         self,
         connection: asyncpg.Connection,
@@ -417,7 +416,6 @@ class UserProgressService:
         )
 
         return user_cards, user_leaders, user_decks
-
 
     async def _get_user_cards(
         self,

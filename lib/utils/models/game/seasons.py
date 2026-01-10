@@ -24,7 +24,7 @@ class Season(BaseModel):
     unlocked: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
-        server_default='false',
+        server_default="false",
     )
 
 
@@ -53,7 +53,7 @@ class Level(BaseModel):
     unlocked: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
-        server_default='false',
+        server_default="false",
     )
     x: Mapped[int] = mapped_column(
         Integer,
@@ -81,9 +81,9 @@ class LevelRelatedLevels(BaseModel):
     __tablename__ = "level_related_levels"
     __table_args__ = (
         UniqueConstraint(
-            'level_id',
-            'related_level_id',
-            name='uq_level_related_levels',
+            "level_id",
+            "related_level_id",
+            name="uq_level_related_levels",
         ),
     )
 

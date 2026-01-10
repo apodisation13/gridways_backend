@@ -20,10 +20,10 @@ class Database:
         conn: asyncpg.Connection,
     ):
         await conn.set_type_codec(
-            'jsonb',
+            "jsonb",
             encoder=lambda v: json.dumps(v),  # Python -> JSONB
             decoder=lambda v: json.loads(v),  # JSONB -> Python
-            schema='pg_catalog',
+            schema="pg_catalog",
         )
 
     async def connect(self) -> asyncpg.Pool:

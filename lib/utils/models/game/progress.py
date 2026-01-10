@@ -134,5 +134,5 @@ class UserLevel(BaseModel):
     finished: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
-        server_default='false',
+        server_default="false",
     )
