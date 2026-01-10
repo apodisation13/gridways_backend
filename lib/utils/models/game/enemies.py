@@ -1,9 +1,8 @@
 from typing import Optional
 
-from sqlalchemy import Integer, String, Text, ForeignKey, Boolean
-from sqlalchemy.orm import mapped_column, Mapped
-
 from lib.utils.models import BaseModel
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 class Move(BaseModel):

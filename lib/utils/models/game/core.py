@@ -1,9 +1,8 @@
 from typing import Any
 
-from sqlalchemy.dialects.postgresql import JSONB
-
 from lib.utils.models import BaseModel
 from sqlalchemy import Integer, String, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 

@@ -1,7 +1,7 @@
 from typing import Optional
 
 from lib.utils.models import BaseModel
-from sqlalchemy import Integer, String, Text, Boolean, ForeignKey, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 
@@ -109,12 +109,12 @@ class Leader(BaseModel):
     damage: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
-        server_default="0"
+        server_default="0",
     )
     charges: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
-        server_default="1"
+        server_default="1",
     )
     heal: Mapped[int] = mapped_column(
         Integer,
