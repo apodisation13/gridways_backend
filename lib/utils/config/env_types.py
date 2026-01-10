@@ -40,9 +40,9 @@ def get_secret(
 
     try:
         if isinstance(cast, bool):
-            if value.lower() == 'true':
+            if value.lower() == "true":
                 return True
-            elif value.lower() == 'false':
+            elif value.lower() == "false":
                 return False
             else:
                 raise ValueError(f"Cannot convert '{value}' to bool")
