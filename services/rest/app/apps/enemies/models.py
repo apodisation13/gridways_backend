@@ -5,6 +5,7 @@ from apps.core.models import Color, Faction
 
 class Move(models.Model):
     """Способность врага ходить: down, stand, random, stand"""
+
     class Meta:
         managed = False
         db_table = "moves"
@@ -24,11 +25,12 @@ class Move(models.Model):
     )
 
     def __str__(self) -> str:
-        return f'{self.pk} - {self.name}'
+        return f"{self.pk} - {self.name}"
 
 
 class EnemyPassiveAbility(models.Model):
     """Пассивная способность врагов"""
+
     class Meta:
         managed = False
         db_table = "enemy_passive_abilities"
@@ -48,11 +50,12 @@ class EnemyPassiveAbility(models.Model):
     )
 
     def __str__(self) -> str:
-        return f'{self.pk} - {self.name}'
+        return f"{self.pk} - {self.name}"
 
 
 class EnemyLeaderAbility(models.Model):
     """Способности лидеров врагов"""
+
     class Meta:
         managed = False
         db_table = "enemy_leader_abilities"
@@ -72,11 +75,12 @@ class EnemyLeaderAbility(models.Model):
     )
 
     def __str__(self) -> str:
-        return f'{self.pk} - {self.name}'
+        return f"{self.pk} - {self.name}"
 
 
 class Deathwish(models.Model):
     """Модель способности завещание у врага"""
+
     class Meta:
         managed = False
         db_table = "deathwishes"
@@ -96,7 +100,7 @@ class Deathwish(models.Model):
     )
 
     def __str__(self) -> str:
-        return f'{self.pk} - {self.name}'
+        return f"{self.pk} - {self.name}"
 
 
 class Enemy(models.Model):
@@ -115,17 +119,17 @@ class Enemy(models.Model):
     )
     # TODO: работа с картинками!!!
     image_original = models.ImageField(
-        upload_to='leaders/',
+        upload_to="leaders/",
         blank=False,
         null=False,
     )
     image_tablet = models.ImageField(
-        upload_to='leaders/',
+        upload_to="leaders/",
         blank=False,
         null=False,
     )
     image_phone = models.ImageField(
-        upload_to='leaders/',
+        upload_to="leaders/",
         blank=False,
         null=False,
     )
@@ -137,12 +141,12 @@ class Enemy(models.Model):
     )
     color = models.ForeignKey(
         Color,
-        related_name='enemies',
+        related_name="enemies",
         on_delete=models.PROTECT,
     )
     move = models.ForeignKey(
         Move,
-        related_name='enemies',
+        related_name="enemies",
         on_delete=models.PROTECT,
     )
     damage = models.IntegerField(
@@ -223,7 +227,7 @@ class Enemy(models.Model):
     )
     deathwish = models.ForeignKey(
         Deathwish,
-        related_name='enemies',
+        related_name="enemies",
         on_delete=models.PROTECT,
         blank=True,
         null=True,
@@ -237,8 +241,10 @@ class Enemy(models.Model):
     )
 
     def __str__(self) -> str:
-        return f'{self.pk}:{self.name}, {self.faction}, {self.color}, ' \
-               f'damage {self.damage}, hp {self.hp}, move {self.move.name}, shield {self.shield}'
+        return (
+            f"{self.pk}:{self.name}, {self.faction}, {self.color}, "
+            f"damage {self.damage}, hp {self.hp}, move {self.move.name}, shield {self.shield}"
+        )
 
 
 class EnemyLeader(models.Model):
@@ -257,17 +263,17 @@ class EnemyLeader(models.Model):
     )
     # TODO: работа с картинками!!!
     image_original = models.ImageField(
-        upload_to='leaders/',
+        upload_to="leaders/",
         blank=False,
         null=False,
     )
     image_tablet = models.ImageField(
-        upload_to='leaders/',
+        upload_to="leaders/",
         blank=False,
         null=False,
     )
     image_phone = models.ImageField(
-        upload_to='leaders/',
+        upload_to="leaders/",
         blank=False,
         null=False,
     )
@@ -291,7 +297,7 @@ class EnemyLeader(models.Model):
     )
     ability = models.ForeignKey(
         EnemyLeaderAbility,
-        related_name='enemy_leaders',
+        related_name="enemy_leaders",
         on_delete=models.PROTECT,
         blank=True,
         null=True,
@@ -336,5 +342,7 @@ class EnemyLeader(models.Model):
     )
 
     def __str__(self) -> str:
-        return f'{self.pk} - {self.name}, hp {self.hp}, passive {self.has_passive}, ' \
-               f'абилка - {self.ability}, пассивка - {self.passive_ability}'
+        return (
+            f"{self.pk} - {self.name}, hp {self.hp}, passive {self.has_passive}, "
+            f"абилка - {self.ability}, пассивка - {self.passive_ability}"
+        )

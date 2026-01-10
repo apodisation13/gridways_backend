@@ -3,6 +3,7 @@ from django.db import models
 
 class Faction(models.Model):
     """Модель фракции - пока Neutral, Soldiers, Animals, Monsters"""
+
     class Meta:
         managed = False
         db_table = "factions"
@@ -18,11 +19,12 @@ class Faction(models.Model):
     )
 
     def __str__(self) -> str:
-        return f'{self.pk} - {self.name}'
+        return f"{self.pk} - {self.name}"
 
 
 class Color(models.Model):
     """Модель цвета карты - Bronze, Silver, Gold"""
+
     class Meta:
         managed = False
         db_table = "colors"
@@ -38,11 +40,12 @@ class Color(models.Model):
     )
 
     def __str__(self) -> str:
-        return f'{self.pk} - {self.name}'
+        return f"{self.pk} - {self.name}"
 
 
 class GameConstants(models.Model):
     """Различные игровые данные"""
+
     class Meta:
         managed = False
         db_table = "game_constants"

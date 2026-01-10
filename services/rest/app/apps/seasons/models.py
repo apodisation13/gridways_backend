@@ -46,9 +46,7 @@ class Level(models.Model):
         db_table = "levels"
         verbose_name = "Уровень"
         verbose_name_plural = "Уровни"
-        ordering = (
-            "-pk",
-        )
+        ordering = ("-pk",)
 
     name = models.CharField(
         verbose_name="Название уровня",
@@ -92,7 +90,7 @@ class Level(models.Model):
     )
     enemy_leader = models.ForeignKey(
         EnemyLeader,
-        related_name='levels',
+        related_name="levels",
         on_delete=models.PROTECT,
         blank=False,
         null=False,
@@ -100,8 +98,8 @@ class Level(models.Model):
 
     enemies = models.ManyToManyField(
         Enemy,
-        related_name='levels',
-        through='LevelEnemy',
+        related_name="levels",
+        through="LevelEnemy",
     )
     related_levels = models.ManyToManyField(
         "Level",
@@ -110,8 +108,10 @@ class Level(models.Model):
     )
 
     def __str__(self) -> str:
-        return f'{self.pk}:{self.name}, появление: {self.starting_enemies_number}, ' \
-               f'сложность {self.difficulty}, врагов {self.number_of_enemies()}, лидер {self.enemy_leader}'
+        return (
+            f"{self.pk}:{self.name}, появление: {self.starting_enemies_number}, "
+            f"сложность {self.difficulty}, врагов {self.number_of_enemies()}, лидер {self.enemy_leader}"
+        )
 
     def number_of_enemies(self) -> int:
         """для админки, чтобы показать это количество"""
@@ -128,9 +128,7 @@ class LevelRelatedLevels(models.Model):
         db_table = "level_related_levels"
         verbose_name = "Уровень"
         verbose_name_plural = "Уровни"
-        ordering = (
-            "-pk",
-        )
+        ordering = ("-pk",)
         unique_together = (
             "level",
             "related_level",
@@ -175,11 +173,11 @@ class LevelEnemy(models.Model):
 
     level = models.ForeignKey(
         Level,
-        related_name='l',
+        related_name="l",
         on_delete=models.PROTECT,
     )
     enemy = models.ForeignKey(
         Enemy,
-        related_name='l',
+        related_name="l",
         on_delete=models.PROTECT,
     )

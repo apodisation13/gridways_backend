@@ -5,6 +5,7 @@ from apps.core.models import Color, Faction
 
 class Type(models.Model):
     """Тип карты - Unit, Special"""
+
     class Meta:
         managed = False
         db_table = "types"
@@ -20,11 +21,12 @@ class Type(models.Model):
     )
 
     def __str__(self) -> str:
-        return f'{self.pk} - {self.name}'
+        return f"{self.pk} - {self.name}"
 
 
 class Ability(models.Model):
     """Способность карты"""
+
     class Meta:
         managed = False
         db_table = "abilities"
@@ -45,11 +47,12 @@ class Ability(models.Model):
     )
 
     def __str__(self) -> str:
-        return f'{self.pk} - {self.name}'
+        return f"{self.pk} - {self.name}"
 
 
 class PassiveAbility(models.Model):
     """Пассивные способности карт и лидеров"""
+
     class Meta:
         managed = False
         db_table = "passive_abilities"
@@ -70,7 +73,7 @@ class PassiveAbility(models.Model):
     )
 
     def __str__(self) -> str:
-        return f'{self.pk} - {self.name}'
+        return f"{self.pk} - {self.name}"
 
 
 class Leader(models.Model):
@@ -93,17 +96,17 @@ class Leader(models.Model):
     )
     # TODO: работа с картинками!!!
     image_original = models.ImageField(
-        upload_to='leaders/',
+        upload_to="leaders/",
         blank=False,
         null=False,
     )
     image_tablet = models.ImageField(
-        upload_to='leaders/',
+        upload_to="leaders/",
         blank=False,
         null=False,
     )
     image_phone = models.ImageField(
-        upload_to='leaders/',
+        upload_to="leaders/",
         blank=False,
         null=False,
     )
@@ -119,7 +122,7 @@ class Leader(models.Model):
     )
     ability = models.ForeignKey(
         Ability,
-        related_name='leaders',
+        related_name="leaders",
         on_delete=models.PROTECT,
         null=False,
     )
@@ -147,7 +150,7 @@ class Leader(models.Model):
     )
     passive_ability = models.ForeignKey(
         PassiveAbility,
-        related_name='leaders',
+        related_name="leaders",
         on_delete=models.PROTECT,
         blank=True,
         null=True,
@@ -177,7 +180,7 @@ class Leader(models.Model):
     )
 
     def __str__(self) -> str:
-        return f'{self.name}, ability {self.ability}, damage {self.damage} charges {self.charges}'
+        return f"{self.name}, ability {self.ability}, damage {self.damage} charges {self.charges}"
 
 
 class Card(models.Model):
@@ -202,17 +205,17 @@ class Card(models.Model):
     )
     # TODO: работа с картинками!!!
     image_original = models.ImageField(
-        upload_to='leaders/',
+        upload_to="leaders/",
         blank=False,
         null=False,
     )
     image_tablet = models.ImageField(
-        upload_to='leaders/',
+        upload_to="leaders/",
         blank=False,
         null=False,
     )
     image_phone = models.ImageField(
-        upload_to='leaders/',
+        upload_to="leaders/",
         blank=False,
         null=False,
     )
@@ -228,17 +231,17 @@ class Card(models.Model):
     )
     color = models.ForeignKey(
         Color,
-        related_name='cards',
+        related_name="cards",
         on_delete=models.PROTECT,
     )
     type = models.ForeignKey(
         Type,
-        related_name='cards',
+        related_name="cards",
         on_delete=models.PROTECT,
     )
     ability = models.ForeignKey(
         Ability,
-        related_name='cards',
+        related_name="cards",
         on_delete=models.PROTECT,
         null=False,
     )
@@ -284,7 +287,7 @@ class Card(models.Model):
     )
     passive_ability = models.ForeignKey(
         PassiveAbility,
-        related_name='cards',
+        related_name="cards",
         on_delete=models.PROTECT,
         blank=True,
         null=True,
@@ -318,8 +321,7 @@ class Card(models.Model):
     )
 
     def __str__(self) -> str:
-        return f'{self.pk} {self.name}, hp {self.hp}, ' \
-               f'ability {self.ability}, damage {self.damage}, heal {self.heal} '
+        return f"{self.pk} {self.name}, hp {self.hp}, ability {self.ability}, damage {self.damage}, heal {self.heal} "
 
     # @classmethod
     # def from_db(cls, db, field_names, values):
@@ -361,7 +363,7 @@ class Deck(models.Model):
     )
 
     def __str__(self) -> str:
-        return f'{self.pk}, name {self.name}, {self.leader}'
+        return f"{self.pk}, name {self.name}, {self.leader}"
 
 
 class CardDeck(models.Model):
