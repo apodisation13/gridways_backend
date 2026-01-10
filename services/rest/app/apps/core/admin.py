@@ -1,9 +1,9 @@
-from django.contrib import admin
 from django import forms
+from django.contrib import admin
 from django.http import HttpRequest
-from django_json_widget.widgets import JSONEditorWidget
 
-from apps.core.models import GameConstants, Faction, Color
+from apps.core.models import Color, Faction, GameConstants
+from django_json_widget.widgets import JSONEditorWidget
 
 
 class GameConstantsForm(forms.ModelForm):

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.seasons.models import LevelEnemy, LevelRelatedLevels, Level, Season
+from apps.seasons.models import Level, LevelEnemy, LevelRelatedLevels, Season
 
 
 admin.site.register(Season)
@@ -61,9 +61,15 @@ class LevelAdmin(admin.ModelAdmin):
     )
 
     @admin.display(description="enemy_leader")
-    def enemy_leader_admin(self, obj):
+    def enemy_leader_admin(
+        self,
+        obj: Level,
+    ) -> str:
         return f"{obj.enemy_leader.name} - {obj.enemy_leader.ability}"
 
     @admin.display(description="en_№")
-    def number_of_enemies_admin(self, obj):
+    def number_of_enemies_admin(
+        self,
+        obj: Level,
+    ) -> int:
         return obj.number_of_enemies()

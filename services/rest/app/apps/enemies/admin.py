@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from apps.enemies.models import Move, EnemyLeaderAbility, EnemyPassiveAbility, Deathwish, EnemyLeader, Enemy
+from apps.enemies.models import Deathwish, Enemy, EnemyLeader, EnemyLeaderAbility, EnemyPassiveAbility, Move
+
 
 admin.site.register(Move)
 admin.site.register(EnemyLeaderAbility)
