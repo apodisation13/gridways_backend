@@ -6,8 +6,6 @@ from lib.utils.models import User
 
 
 class UserFactory(BaseModelFactory):
-    """Фабрика для создания пользователей"""
-
     class Meta:
         model = User
 
