@@ -246,7 +246,6 @@ class UserProgressService:
                     seasons.unlocked AS season_unlocked,
                     levels.id AS level_id,
                     levels.name AS level_name,
-                    --levels.unlocked AS level_unlocked,
                     levels.difficulty,
                     levels.starting_enemies_number,
                     levels.x,

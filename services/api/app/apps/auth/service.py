@@ -11,7 +11,7 @@ from services.api.app.apps.auth.schemas import (
     UserLoginRequest,
     UserLoginResponse,
     UserRegisterRequest,
-    UserRegisterResponse,
+    UserRegisterResponse, UserCheckTokenResponse,
 )
 from services.api.app.config import Config
 from services.api.app.exceptions import UserAlreadyExistsError, UserNotFoundError
@@ -210,3 +210,24 @@ class AuthService:
 
         if not username:
             raise UserNotFoundError()
+
+    async def get_user_by_token(
+        self,
+        token: str,
+    ) -> UserCheckTokenResponse:
+        email = decode_token(token)
+        print("STR219", email)
+
+        if email is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        user = await self._get_user_by_email(email=email)
+        print("STR229", user)
+        return UserCheckTokenResponse(
+            id=user["id"],
+            email=user["email"],
+        )
