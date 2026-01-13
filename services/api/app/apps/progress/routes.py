@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, Path, Request
 
 from services.api.app.apps.auth import dependencies as auth_dependencies
 
-from services.api.app.apps.progress.schemas import UserProgressResponse, CreateDeckRequest, ListDecksResponse
+from services.api.app.apps.progress.schemas import UserProgressResponse, CreateDeckRequest, ListDecksResponse, \
+    ResourcesRequest, UserResources
 from services.api.app.apps.progress.service import UserProgressService
 from services.api.app.dependencies import get_user_progress_service
 
@@ -67,4 +68,17 @@ async def change_user_deck(
         deck_id=deck_id,
         deck=deck,
         base_url=str(request.base_url),
+    )
+
+
+@router.patch("/{user_id}/resource")
+async def manage_resources(
+    resource_request: ResourcesRequest,
+    _ = Depends(auth_dependencies.validate_user),
+    user_progress_service: UserProgressService = Depends(get_user_progress_service),
+    user_id: int = Path(..., gt=0),
+) -> UserResources:
+    return await user_progress_service.manage_resources(
+        user_id=user_id,
+        resource_request=resource_request,
     )

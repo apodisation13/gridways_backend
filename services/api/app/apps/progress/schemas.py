@@ -1,5 +1,5 @@
 from lib.utils.schemas import Base
-from lib.utils.schemas.game import LevelDifficulty
+from lib.utils.schemas.game import LevelDifficulty, ResourceActionSubtype
 from services.api.app.apps.cards.schemas import Card, Deck, Enemy, EnemyLeader, Leader
 
 
@@ -85,3 +85,8 @@ class CreateDeckRequest(Base):
 
 class ListDecksResponse(Base):
     decks: list[UserDeck]
+
+
+class ResourcesRequest(Base):
+    subtype: ResourceActionSubtype
+    data: dict

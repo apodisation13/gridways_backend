@@ -1,8 +1,15 @@
 import asyncpg
 
 from services.api.app.apps.cards.schemas import Enemy, EnemyLeader, Card, CardForDeck, Leader, Deck
-from services.api.app.apps.progress.schemas import Season, LevelRelatedLevel, Level, UserLevel, UserDeck, UserLeader, \
-    UserCard
+from services.api.app.apps.progress.schemas import (
+    Season,
+    LevelRelatedLevel,
+    Level,
+    UserLevel,
+    UserDeck,
+    UserLeader,
+    UserCard,
+)
 
 
 async def process_enemies(
