@@ -21,3 +21,16 @@ class ResourceType(StrEnum):
 class ResourceActionSubtype(StrEnum):
     START_SEASON_LEVEL = "start_season_level"
     WIN_SEASON_LEVEL = "win_season_level"
+
+
+class CardActionSubtype(StrEnum):
+    CRAFT_CARD = "craft_card"
+    CRAFT_LEADER = "craft_leader"
+    MILL_CARD = "mill_card"
+    MILL_LEADER = "mill_leader"
+
+
+class CardColorName(StrEnum):
+    BRONZE = "Bronze"
+    SILVER = "Silver"
+    GOLD = "Gold"

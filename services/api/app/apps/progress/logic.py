@@ -1,5 +1,6 @@
 import asyncpg
 
+from lib.utils.schemas.game import ResourceType
 from services.api.app.apps.cards.schemas import Enemy, EnemyLeader, Card, CardForDeck, Leader, Deck
 from services.api.app.apps.progress.schemas import (
     Season,
@@ -8,7 +9,7 @@ from services.api.app.apps.progress.schemas import (
     UserLevel,
     UserDeck,
     UserLeader,
-    UserCard,
+    UserCard, UserResources,
 )
 
 
@@ -224,7 +225,7 @@ async def construct_seasons(
 
     for row in seasons:
         # print()
-        season_id = row["season_id"]
+        # season_id = row["season_id"]
         # print("STR170 season_id", season_id)
 
         # user_level_id = row["user_level_id"]
@@ -509,3 +510,40 @@ async def construct_user_decks(
     #     user_decks_model.append(user_deck)
 
     return list(user_decs_dict.values())
+
+
+def validate_user_resources_payment(
+    resources_to_change: dict[ResourceType: int],
+    current_resources: UserResources,
+) -> None:
+    for resource_type, value_to_pay in resources_to_change.items():
+        if getattr(current_resources, resource_type) + value_to_pay < 0:
+            raise ValueError(f"Cannot pay resource {resource_type}, would be less than 0")
+
+
+async def get_user_resources(
+    user_id: int,
+    connection: asyncpg.Connection,
+) -> UserResources:
+    user_resources = await connection.fetchrow(
+        """
+            SELECT scraps, kegs, big_kegs, chests, wood, keys
+            FROM user_resources
+            WHERE id = $1
+        """,
+        user_id,
+    )
+    return UserResources(
+        scraps=user_resources["scraps"],
+        kegs=user_resources["kegs"],
+        big_kegs=user_resources["big_kegs"],
+        chests=user_resources["chests"],
+        wood=user_resources["wood"],
+        keys=user_resources["keys"],
+    )
+
+async def get_game_constants(
+    connection: asyncpg.Connection,
+) -> dict:
+    game_constants: dict = await connection.fetchval("""SELECT data::jsonb FROM game_constants""")
+    return game_constants

@@ -8,3 +8,7 @@ class UserNotFoundError(Exception):
 
 class UserIncorrectPasswordError(Exception):
     pass
+
+
+class CraftMillCardProcessError(Exception):
+    pass

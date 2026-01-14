@@ -1,15 +1,23 @@
+import logging
+
 import asyncpg
 
 from lib.utils.db.pool import Database
-from lib.utils.schemas.game import ResourceActionSubtype, LevelDifficulty, ResourceType
+from lib.utils.schemas.game import ResourceActionSubtype, LevelDifficulty, ResourceType, CardActionSubtype, \
+    CardColorName
 from services.api.app.apps.cards.schemas import Card
-from services.api.app.apps.progress.logic import process_enemies, process_cards
+from services.api.app.apps.progress import logic
 from services.api.app.apps.progress.schemas import (
     UserDatabase,
     UserProgressResponse,
-    UserResources, CreateDeckRequest, ListDecksResponse, ResourcesRequest,
+    UserResources, CreateDeckRequest, ListDecksResponse, ResourcesRequest, UserCard, UserLeader,
+    CardCraftMillResponse,
 )
 from services.api.app.config import Config
+from services.api.app.exceptions.exceptions import CraftMillCardProcessError
+
+
+logger = logging.getLogger(__name__)
 
 
 class UserProgressService:
@@ -27,22 +35,22 @@ class UserProgressService:
         base_url: str,
     ) -> UserProgressResponse:
         async with self.db_pool.connection() as connection:
-            user_resources: UserResources = await self._get_user_resources(
+            user_resources: UserResources = await logic.get_user_resources(
                 connection=connection,
                 user_id=user_id,
             )
 
-            game_constants: dict = await self._get_game_constants(
+            game_constants: dict = await logic.get_game_constants(
                 connection=connection,
             )
 
-            enemies, enemy_leaders, seasons = await process_enemies(
+            enemies, enemy_leaders, seasons = await logic.process_enemies(
                 connection=connection,
                 user_id=user_id,
                 base_url=base_url,
             )
 
-            user_cards, user_leaders, user_decks = await process_cards(
+            user_cards, user_leaders, user_decks = await logic.process_cards(
                 connection=connection,
                 user_id=user_id,
                 base_url=base_url,
@@ -60,36 +68,6 @@ class UserProgressService:
             enemies=enemies,
             enemy_leaders=enemy_leaders,
         )
-
-    async def _get_user_resources(
-        self,
-        user_id: int,
-        connection: asyncpg.Connection,
-    ) -> UserResources:
-        user_resources = await connection.fetchrow(
-            """
-                SELECT scraps, kegs, big_kegs, chests, wood, keys
-                FROM user_resources
-                WHERE id = $1
-            """,
-            user_id,
-        )
-        return UserResources(
-            scraps=user_resources["scraps"],
-            kegs=user_resources["kegs"],
-            big_kegs=user_resources["big_kegs"],
-            chests=user_resources["chests"],
-            wood=user_resources["wood"],
-            keys=user_resources["keys"],
-        )
-
-    async def _get_game_constants(
-        self,
-        connection: asyncpg.Connection,
-    ) -> dict:
-        game_constants: dict = await connection.fetchval("""SELECT data::jsonb FROM game_constants""")
-        print(type(game_constants), game_constants)
-        return game_constants
 
     async def create_user_deck(
         self,
@@ -132,7 +110,7 @@ class UserProgressService:
                 deck_id,
             )
 
-            _, _, user_decks = await process_cards(
+            _, _, user_decks = await logic.process_cards(
                 connection=connection,
                 user_id=user_id,
                 base_url=base_url,
@@ -176,7 +154,7 @@ class UserProgressService:
                 """,
                 deck_id,
             )
-            _, _, user_decks = await process_cards(
+            _, _, user_decks = await logic.process_cards(
                 connection=connection,
                 user_id=user_id,
                 base_url=base_url,
@@ -228,7 +206,7 @@ class UserProgressService:
                 card_decks,
             )
 
-            _, _, user_decks = await process_cards(
+            _, _, user_decks = await logic.process_cards(
                 connection=connection,
                 user_id=user_id,
                 base_url=base_url,
@@ -262,7 +240,7 @@ class UserProgressService:
                         level_id,
                     )
 
-                    game_constants: dict = await self._get_game_constants(
+                    game_constants: dict = await logic.get_game_constants(
                         connection=connection,
                     )
 
@@ -275,13 +253,13 @@ class UserProgressService:
                     else:
                         raise TypeError(f"Invalid level difficulty {difficulty}")
 
-                    user_resources: UserResources = await self._get_user_resources(
+                    user_resources: UserResources = await logic.get_user_resources(
                         connection=connection,
                         user_id=user_id,
                     )
                     print(level_id, difficulty, user_resources, pay_resources)
 
-                    self._validate_user_resources_payment(
+                    logic.validate_user_resources_payment(
                         resources_to_change=pay_resources,
                         current_resources=user_resources,
                     )
@@ -300,14 +278,8 @@ class UserProgressService:
                         resources_to_change=resource_request.data,
                     )
 
-    def _validate_user_resources_payment(
-        self,
-        resources_to_change: dict[ResourceType: int],
-        current_resources: UserResources,
-    ) -> None:
-        for resource_type, value_to_pay in resources_to_change.items():
-            if getattr(current_resources, resource_type) + value_to_pay < 0:
-                raise ValueError(f"Cannot pay resource {resource_type}, would be less than 0")
+            case _:
+                raise TypeError(f"Invalid subtype {subtype}")
 
     async def _change_resources(
         self,
@@ -338,3 +310,312 @@ class UserProgressService:
             chests=result["chests"],
             keys=result["keys"],
         )
+
+    async def manage_craft_mill_process(
+        self,
+        user_id: int,
+        card_id: int,
+        subtype: CardActionSubtype,
+        base_url: str,
+    ) -> CardCraftMillResponse:
+        logger.info("Got here for user %s trying (subtype %s) for card %s", user_id, subtype, card_id)
+        match subtype:
+            case subtype.CRAFT_CARD:
+                async with self.db_pool.transaction() as connection:
+                    # 1. Спишем ресурсы за созданную карту
+                    # 1.1. Ищем цвет карты, чтобы понять, сколько за нее начислить
+                    card_color: CardColorName = await connection.fetchval(
+                        """
+                            SELECT colors.name
+                            FROM cards 
+                            JOIN colors ON cards.color_id = colors.id
+                            WHERE cards.id = $1
+                        """,
+                        card_id,
+                    )
+
+                    # 1.2. В константах лежат параметры, сколько списать за крафт той или иной карты
+                    game_constants: dict = await logic.get_game_constants(
+                        connection=connection,
+                    )
+
+                    if card_color == CardColorName.BRONZE:
+                        pay_resources = {ResourceType.SCRAPS: game_constants["craft_bronze"]}
+                    elif card_color == CardColorName.SILVER:
+                        pay_resources = {ResourceType.SCRAPS: game_constants["craft_silver"]}
+                    elif card_color == CardColorName.GOLD:
+                        pay_resources = {ResourceType.SCRAPS: game_constants["craft_gold"]}
+                    else:
+                        logger.error("Unknown color %s", card_color)
+                        raise TypeError(f"Invalid card color {card_color}")
+
+                    # 1.3. Попытались списать ресурсы
+                    user_resources: UserResources = await self._change_resources(
+                        connection=connection,
+                        user_id=user_id,
+                        resources_to_change=pay_resources,
+                    )
+
+                    # 1.4. Если получилось, что ресурсов на списание не хватило, отменяем транзакцию!
+                    if user_resources.scraps < 0:
+                        msg = "Can not craft card %s for user %s, not enough scraps"
+                        logger.error(msg, card_id, user_id)
+                        raise CraftMillCardProcessError(msg, card_id, user_id)
+
+                    # 2. Создаем юзеру карту
+                    # 2.1. Крафтим карту - пытаемся сделать инзерт, а если такая уже есть, делаем count += 1
+                    await connection.fetchrow(
+                        """
+                            INSERT INTO user_cards
+                            (user_id, card_id, count)
+                            VALUES ($1, $2, 1)
+                            ON CONFLICT (user_id, card_id)
+                            DO UPDATE
+                            SET count = user_cards.count + 1
+                        """,
+                        user_id,
+                        card_id,
+                    )
+
+                    # 2.2. После создания возвращаем на фронт весь список UserCard, чтобы обновить там карты
+                    user_cards: list[UserCard] = await logic.get_user_cards(
+                        connection=connection,
+                        user_id=user_id,
+                        base_url=base_url,
+                    )
+
+                    logger.info("Successfully crafted card %s for user %s", card_id, user_id)
+                    return CardCraftMillResponse(
+                        cards=user_cards,
+                        resources=user_resources,
+                    )
+
+            case subtype.CRAFT_LEADER:
+                async with self.db_pool.transaction() as connection:
+                    # 1. Спишем ресурсы за карту лидера
+                    # 1.1. Берем опять же игровые константы
+                    game_constants: dict = await logic.get_game_constants(
+                        connection=connection,
+                    )
+                    # 1.2. А тут проще - не нужно делать запрос, мы всегда знаем стоимость за крафт лидера
+                    pay_resources = {ResourceType.SCRAPS: game_constants["craft_leader"]}
+
+                    # 1.3. Попытались списать ресурсы
+                    user_resources: UserResources = await self._change_resources(
+                        connection=connection,
+                        user_id=user_id,
+                        resources_to_change=pay_resources,
+                    )
+
+                    # 1.4. Если получилось, что ресурсов на списание не хватило, отменяем транзакцию!
+                    if user_resources.scraps < 0:
+                        msg = "Can not craft leader card %s for user %s, not enough scraps"
+                        logger.error(msg, card_id, user_id)
+                        raise CraftMillCardProcessError(msg, card_id, user_id)
+
+                    # 2. Создаем юзеру карту лидера
+                    # 2.1. Крафтим карту лидера - пытаемся сделать инзерт, а если такая уже есть, делаем count += 1
+                    await connection.fetchrow(
+                        """
+                            INSERT INTO user_leaders
+                            (user_id, leader_id, count)
+                            VALUES ($1, $2, 1)
+                            ON CONFLICT (user_id, leader_id)
+                            DO UPDATE
+                            SET count = user_leaders.count + 1
+                        """,
+                        user_id,
+                        card_id,
+                    )
+
+                    # 2.2. После создания возвращаем на фронт весь список UserLeader, чтобы обновить там лидеров
+                    user_leaders: list[UserLeader] = await logic.get_user_leaders(
+                        connection=connection,
+                        user_id=user_id,
+                        base_url=base_url,
+                    )
+
+                    logger.info("Successfully crafted leader card %s for user %s", card_id, user_id)
+                    return CardCraftMillResponse(
+                        cards=user_leaders,
+                        resources=user_resources,
+                    )
+
+            case subtype.MILL_CARD:
+                async with self.db_pool.transaction() as connection:
+                    # 1. А здесь делаем наоборот - вначале уничтожаем карту, потом начисляем ресурсы
+                    # 1.1. Ищем, карта из дефолтного набора (unlocked) или нет + смотрим ее user_cards.count
+                    user_card: dict = await connection.fetchrow(
+                        """
+                            SELECT 
+                                cards.unlocked, 
+                                user_cards.id,
+                                user_cards.count
+                            FROM user_cards
+                            JOIN cards ON cards.id = user_cards.card_id
+                            AND user_cards.user_id = $1
+                            AND user_cards.card_id = $2
+                        """,
+                        user_id,
+                        card_id,
+                    )
+
+                    if not user_card:
+                        msg = "Cannot find such card %s for user %s"
+                        logger.error(msg, card_id, user_id)
+                        raise CraftMillCardProcessError(msg, card_id, user_id)
+
+                    # 1.2. Если карта из дефолтного набора и ее у юзера 1, то ее нельзя миллить!
+                    if user_card["unlocked"] and user_card["count"] <= 1:
+                        msg = "Cannot mill default unlocked card %s for user %s"
+                        logger.error(msg, card_id, user_id)
+                        raise CraftMillCardProcessError(msg, card_id, user_id)
+
+                    # 1.3. Если карта НЕ из дефолтного набора, то ее нельзя миллить если ее и так нету
+                    if not user_card["unlocked"] and user_card["count"] <= 0:
+                        msg = "Cannot mill card %s for user %s, seems user doesn't have it"
+                        logger.error(msg, card_id, user_id)
+                        raise CraftMillCardProcessError(msg, card_id, user_id)
+
+                    # 1.4. Пытаемся уничтожить эту карту, поставив ей user_cards.count -= 1
+                    card_count: int = await connection.fetchval(
+                        """
+                            UPDATE user_cards
+                            SET count = user_cards.count - 1
+                            WHERE user_cards.id = $1
+                            RETURNING user_cards.count
+                        """,
+                        user_card["id"],
+                    )
+
+                    # 1.5. Если вдруг как-то карты стало отрицательное значение, отменяем транзакцию
+                    if card_count < 0:
+                        msg = "Cannot mill card %s for user %s, count seems to be negative value"
+                        logger.error(msg, card_id, user_id)
+                        raise CraftMillCardProcessError(msg, card_id, user_id)
+
+                    # 2. А теперь начисляем ресурсы за униточженную карту
+                    # 2.1. Ищем цвет карты, чтобы понять какие ресурсы за нее
+                    card_color: CardColorName = await connection.fetchval(
+                        """
+                            SELECT 
+                                colors.name
+                            FROM cards 
+                            JOIN colors ON cards.color_id = colors.id
+                            WHERE cards.id = $1
+                        """,
+                        card_id,
+                    )
+
+                    # 2.2. Достаем игровые константы
+                    game_constants: dict = await logic.get_game_constants(
+                        connection=connection,
+                    )
+
+                    if card_color == CardColorName.BRONZE:
+                        pay_resources = {ResourceType.SCRAPS: game_constants["mill_bronze"]}
+                    elif card_color == CardColorName.SILVER:
+                        pay_resources = {ResourceType.SCRAPS: game_constants["mill_silver"]}
+                    elif card_color == CardColorName.GOLD:
+                        pay_resources = {ResourceType.SCRAPS: game_constants["mill_gold"]}
+                    else:
+                        raise TypeError(f"Invalid card color {card_color}")
+
+                    # 2.3. Добавляем тут юзеру ресурсы
+                    user_resources: UserResources = await self._change_resources(
+                        connection=connection,
+                        user_id=user_id,
+                        resources_to_change=pay_resources,
+                    )
+
+                    # 3. Карту уничтожили, ресурсы добавили, можем собирать все карты юзера для ответа
+                    user_cards: list[UserCard] = await logic.get_user_cards(
+                        connection=connection,
+                        user_id=user_id,
+                        base_url=base_url,
+                    )
+
+                    logger.info("Successfully milled card %s for user %s", card_id, user_id)
+                    return CardCraftMillResponse(
+                        cards=user_cards,
+                        resources=user_resources,
+                    )
+
+            case subtype.MILL_LEADER:
+                async with self.db_pool.connection() as connection:
+                    # 1. А здесь делаем наоборот - вначале уничтожаем карту лидера, потом начисляем ресурсы
+                    # 1.1. Ищем, карта лидера из дефолтного набора (unlocked) или нет + смотрим ее user_leaders.count
+                    user_leader: dict = await connection.fetchrow(
+                        """
+                            SELECT 
+                                leaders.unlocked, 
+                                user_leaders.id,
+                                user_leaders.count
+                            FROM user_leaders
+                            JOIN leaders ON leaders.id = user_leaders.leader_id
+                            AND user_leaders.user_id = $1
+                            AND user_leaders.leader_id = $2
+                        """,
+                        user_id,
+                        card_id,
+                    )
+
+                    if not user_leader:
+                        msg = "Cannot find such leader card %s for user %s"
+                        logger.error(msg, card_id, user_id)
+                        raise CraftMillCardProcessError(msg, card_id, user_id)
+
+                    # 1.2. Если карта лидера из дефолтного набора и ее у юзера 1, то ее нельзя миллить!
+                    if user_leader["unlocked"] and user_leader["count"] <= 1:
+                        msg = "Cannot mill default unlocked leader card %s for user %s"
+                        logger.error(msg, card_id, user_id)
+                        raise CraftMillCardProcessError(msg, card_id, user_id)
+
+                    # 1.3. Если карта лидера НЕ из дефолтного набора, то ее нельзя миллить если ее и так нету
+                    if not user_leader["unlocked"] and user_leader["count"] <= 0:
+                        msg = "Cannot mill leader card %s for user %s, seems user doesn't have it"
+                        logger.error(msg, card_id, user_id)
+                        raise CraftMillCardProcessError(msg, card_id, user_id)
+
+                    # 1.4. Пытаемся уничтожить эту карту лидера, поставив ей user_leaders.count -= 1
+                    await connection.fetchrow(
+                        """
+                            UPDATE user_leaders
+                            SET count = user_leaders.count - 1
+                            WHERE user_leaders.id = $1
+                        """,
+                        user_leader["id"],
+                    )
+
+                    # 2. А теперь начисляем ресурсы за униточженную карту лидера
+                    # 2.1. С лидером проще - за него всегда одна и та же сумма
+                    game_constants: dict = await logic.get_game_constants(
+                        connection=connection,
+                    )
+                    pay_resources = {ResourceType.SCRAPS: game_constants["mill_leader"]}
+
+                    # 2.2. Добавляем тут юзеру ресурсы
+                    user_resources: UserResources = await self._change_resources(
+                        connection=connection,
+                        user_id=user_id,
+                        resources_to_change=pay_resources,
+                    )
+
+                    # 3. Карту лидера уничтожили, ресурсы добавили, можем собирать все карты лидера юзера для ответа
+
+                    user_leaders: list[UserLeader] = await logic.get_user_leaders(
+                        connection=connection,
+                        user_id=user_id,
+                        base_url=base_url,
+                    )
+
+                    logger.info("Successfully milled leader card %s for user %s", card_id, user_id)
+                    return CardCraftMillResponse(
+                        cards=user_leaders,
+                        resources=user_resources,
+                    )
+
+            case _:
+                msg = "Unknow subtype %s for craft/mill card process"
+                logger.error("msg", subtype)
+                raise CraftMillCardProcessError(msg, subtype)
