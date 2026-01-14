@@ -99,3 +99,7 @@ class CardCraftMillRequest(Base):
 class CardCraftMillResponse(Base):
     cards: list[UserCard] | list[UserLeader]
     resources: UserResources
+
+
+class OpenRelatedLevelsResponse(Base):
+    seasons: list[Season]

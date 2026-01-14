@@ -21,6 +21,7 @@ class ResourceType(StrEnum):
 class ResourceActionSubtype(StrEnum):
     START_SEASON_LEVEL = "start_season_level"
     WIN_SEASON_LEVEL = "win_season_level"
+    BONUS_REWARD = "bonus_reward"
 
 
 class CardActionSubtype(StrEnum):

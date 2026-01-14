@@ -11,11 +11,10 @@ from services.api.app.apps.progress.schemas import (
     UserDatabase,
     UserProgressResponse,
     UserResources, CreateDeckRequest, ListDecksResponse, ResourcesRequest, UserCard, UserLeader,
-    CardCraftMillResponse,
+    CardCraftMillResponse, Season, OpenRelatedLevelsResponse,
 )
 from services.api.app.config import Config
-from services.api.app.exceptions.exceptions import CraftMillCardProcessError
-
+from services.api.app.exceptions.exceptions import CraftMillCardProcessError, ManageResourcesProcessError
 
 logger = logging.getLogger(__name__)
 
@@ -222,7 +221,7 @@ class UserProgressService:
         user_id: int,
         resource_request: ResourcesRequest
     ) -> UserResources:
-
+        logger.info("Got here for user %s, resource request: %s", user_id, resource_request)
         subtype: ResourceActionSubtype = resource_request.subtype
 
         match subtype:
@@ -230,7 +229,7 @@ class UserProgressService:
                 """ { subtype: start_game, data: {level_id: int}} """
                 level_id: int = resource_request.data["level_id"]
 
-                async with self.db_pool.connection() as connection:
+                async with self.db_pool.transaction() as connection:
                     difficulty: LevelDifficulty = await connection.fetchval(
                         """
                             SELECT difficulty 
@@ -253,30 +252,51 @@ class UserProgressService:
                     else:
                         raise TypeError(f"Invalid level difficulty {difficulty}")
 
-                    user_resources: UserResources = await logic.get_user_resources(
-                        connection=connection,
-                        user_id=user_id,
-                    )
-                    print(level_id, difficulty, user_resources, pay_resources)
-
-                    logic.validate_user_resources_payment(
-                        resources_to_change=pay_resources,
-                        current_resources=user_resources,
-                    )
-
-                    return await self._change_resources(
+                    user_resources: UserResources = await self._change_resources(
                         connection=connection,
                         user_id=user_id,
                         resources_to_change=pay_resources,
                     )
+
+                    if user_resources.wood < 0:
+                        msg = "Can not change resources for user %s, seems to be negative value wood"
+                        logger.error(msg, user_id)
+                        raise ManageResourcesProcessError(msg, user_id)
+
+                    return user_resources
 
             case subtype.WIN_SEASON_LEVEL:
+                """
+                data: { wood: 201, scraps: 185, etc }
+                Тут придет словарь с ресурсами, которые нужно начислить 
+                """
                 async with self.db_pool.connection() as connection:
                     return await self._change_resources(
                         connection=connection,
                         user_id=user_id,
                         resources_to_change=resource_request.data,
                     )
+
+            case subtype.BONUS_REWARD:
+                """
+                data: { wood: +-201, scraps: +-185, etc }
+                Тут придет словарь с ресурсами, которые нужно списать или наоборот начислить 
+                Отличие от бонуса в том, что тут нужно проверять, не стало ли минус, и кинуть ошибку если стало
+                """
+                async with self.db_pool.transaction() as connection:
+                    user_resources: UserResources = await self._change_resources(
+                        connection=connection,
+                        user_id=user_id,
+                        resources_to_change=resource_request.data,
+                    )
+
+                    for resource in resource_request.data:
+                        if getattr(user_resources, resource) < 0:
+                            msg = "Can not process bonus resources for user %s, seems to be negative value for %s"
+                            logger.error(msg, user_id, resource)
+                            raise ManageResourcesProcessError(msg, user_id)
+
+                    return user_resources
 
             case _:
                 raise TypeError(f"Invalid subtype {subtype}")
@@ -542,7 +562,7 @@ class UserProgressService:
                     )
 
             case subtype.MILL_LEADER:
-                async with self.db_pool.connection() as connection:
+                async with self.db_pool.transaction() as connection:
                     # 1. А здесь делаем наоборот - вначале уничтожаем карту лидера, потом начисляем ресурсы
                     # 1.1. Ищем, карта лидера из дефолтного набора (unlocked) или нет + смотрим ее user_leaders.count
                     user_leader: dict = await connection.fetchrow(
@@ -619,3 +639,58 @@ class UserProgressService:
                 msg = "Unknow subtype %s for craft/mill card process"
                 logger.error("msg", subtype)
                 raise CraftMillCardProcessError(msg, subtype)
+
+    async def open_level_related_levels(
+        self,
+        user_id: int,
+        user_level_id: int,
+        base_url: str,
+    ) -> OpenRelatedLevelsResponse:
+        logger.info("Opening related_levels for user_level %s and user %s", user_level_id, user_id)
+
+        # Ставим текущему user_levels.finished = true, уровень пройден
+        async with self.db_pool.transaction() as connection:
+            await connection.execute(
+                """
+                    UPDATE user_levels
+                    SET finished = TRUE
+                    FROM levels, level_related_levels
+                    WHERE user_levels.level_id = levels.id
+                      AND levels.id = level_related_levels.level_id
+                      AND user_levels.id = $2
+                      AND user_levels.user_id = $1;
+                """,
+                user_id,
+                user_level_id,
+            )
+
+            # находим для этого уровня все его связанные related_level_id и инзертим их как user_levels
+            level_related_levels = await connection.fetch(
+                """
+                    INSERT INTO user_levels (user_id, level_id)
+                    SELECT $1, level_related_levels.related_level_id
+                    FROM level_related_levels
+                    JOIN user_levels ON level_related_levels.level_id = user_levels.level_id
+                    WHERE user_levels.user_id = $1
+                      AND user_levels.id = $2
+                    ON CONFLICT (user_id, level_id) DO NOTHING
+                    RETURNING user_levels.id, user_levels.level_id;
+                """,
+                user_id,
+                user_level_id,
+            )
+            logger.info(
+                "Successfully opened related levels: %s for user %s",
+                [row["level_id"] for row in level_related_levels],
+                user_id,
+            )
+
+            _, _, seasons = await logic.process_enemies(
+                connection=connection,
+                user_id=user_id,
+                base_url=base_url,
+            )
+
+        return OpenRelatedLevelsResponse(
+            seasons=seasons,
+        )

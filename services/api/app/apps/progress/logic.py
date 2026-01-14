@@ -512,15 +512,6 @@ async def construct_user_decks(
     return list(user_decs_dict.values())
 
 
-def validate_user_resources_payment(
-    resources_to_change: dict[ResourceType: int],
-    current_resources: UserResources,
-) -> None:
-    for resource_type, value_to_pay in resources_to_change.items():
-        if getattr(current_resources, resource_type) + value_to_pay < 0:
-            raise ValueError(f"Cannot pay resource {resource_type}, would be less than 0")
-
-
 async def get_user_resources(
     user_id: int,
     connection: asyncpg.Connection,

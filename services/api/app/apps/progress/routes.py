@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Path, Request
 from services.api.app.apps.auth import dependencies as auth_dependencies
 
 from services.api.app.apps.progress.schemas import UserProgressResponse, CreateDeckRequest, ListDecksResponse, \
-    ResourcesRequest, UserResources, CardCraftMillRequest, CardCraftMillResponse
+    ResourcesRequest, UserResources, CardCraftMillRequest, CardCraftMillResponse, Season, OpenRelatedLevelsResponse
 from services.api.app.apps.progress.service import UserProgressService
 from services.api.app.dependencies import get_user_progress_service
 
@@ -97,5 +97,20 @@ async def manage_craft_mill_card(
         user_id=user_id,
         card_id=card_id,
         subtype=card_request.subtype,
+        base_url=str(request.base_url),
+    )
+
+
+@router.patch("/{user_id}/open-related-levels/{user_level_id}")
+async def open_user_related_levels(
+    request: Request,
+    _ = Depends(auth_dependencies.validate_user),
+    user_progress_service: UserProgressService = Depends(get_user_progress_service),
+    user_id: int = Path(..., gt=0),
+    user_level_id: int = Path(..., gt=0),
+) -> OpenRelatedLevelsResponse:
+    return await user_progress_service.open_level_related_levels(
+        user_id=user_id,
+        user_level_id=user_level_id,
         base_url=str(request.base_url),
     )
