@@ -19,6 +19,11 @@ class AsyncFactory(factory.Factory):
         return [await cls.create_async(**kwargs) for _ in range(size)]
 
 
+class TimeStampMixinFactory(AsyncFactory):
+    class Meta:
+        abstract = True
+
+
 class BaseModelFactory(AsyncFactory):
     class Meta:
         abstract = True

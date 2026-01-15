@@ -29,11 +29,16 @@ class TestUsersAPI:
         client: AsyncClient,
         db_connection,
         user_factory,
+        init_db_cards,
     ) -> None:
+        a = await db_connection.fetch("SELECT * FROM card_decks")
+        print("STR40", a)
+
         user = await user_factory(
             # email="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            is_active=False,
         )
-        print("STR35", type(user), user.id)
+        print("STR35", type(user), user.id, user.is_active)
 
         response = await client.post(
             "/users/register-user",
