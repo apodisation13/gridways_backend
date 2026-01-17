@@ -1,16 +1,20 @@
+from pydantic import Field, EmailStr
+
 from lib.utils.schemas import Base
 
 
-class User(Base):
-    id: int
-    username: str
-    email: str
-
-
 class UserRegisterRequest(Base):
-    username: str
-    email: str
-    password: str
+    username: str = Field(
+        ...,
+        min_length=5,
+        max_length=50,
+    )
+    email: EmailStr
+    password: str = Field(
+        ...,
+        min_length=5,
+        max_length=50,
+    )
 
 
 class UserRegisterResponse(Base):
@@ -20,8 +24,12 @@ class UserRegisterResponse(Base):
 
 
 class UserLoginRequest(Base):
-    email: str
-    password: str
+    email: EmailStr
+    password: str = Field(
+        ...,
+        min_length=5,
+        max_length=50,
+    )
 
 
 class Token(Base):
