@@ -51,9 +51,7 @@ class BaseModelFactory(AsyncFactory):
                     data[column] = value
 
         # 2. Переопределяем переданными значениями
-        for key, value in kwargs.items():
-            if key in columns:
-                data[key] = value
+        data.update({key: value for key, value in kwargs.items() if key in columns})
 
         # Формируем запрос
         table_name = cls._meta.model.__tablename__

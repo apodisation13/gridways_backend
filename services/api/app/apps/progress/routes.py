@@ -1,10 +1,17 @@
 from fastapi import APIRouter, Depends, Path, Request
-
 from services.api.app.apps.auth import dependencies as auth_dependencies
-
-from services.api.app.apps.progress.schemas import UserProgressResponse, CreateDeckRequest, ListDecksResponse, \
-    ResourcesRequest, UserResources, CardCraftMillRequest, CardCraftMillResponse, Season, OpenRelatedLevelsResponse, \
-    CardCraftBonusRequest, CardCraftBonusResponse
+from services.api.app.apps.progress.schemas import (
+    CardCraftBonusRequest,
+    CardCraftBonusResponse,
+    CardCraftMillRequest,
+    CardCraftMillResponse,
+    CreateDeckRequest,
+    ListDecksResponse,
+    OpenRelatedLevelsResponse,
+    ResourcesRequest,
+    UserProgressResponse,
+    UserResources,
+)
 from services.api.app.apps.progress.service import UserProgressService
 from services.api.app.dependencies import get_user_progress_service
 

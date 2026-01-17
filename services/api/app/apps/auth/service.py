@@ -8,11 +8,11 @@ from lib.utils.schemas.users import UserRole
 from services.api.app.apps.auth.lib import create_access_token, decode_token, get_password_hash, verify_password
 from services.api.app.apps.auth.schemas import (
     Token,
+    UserCheckTokenResponse,
     UserLoginRequest,
     UserLoginResponse,
     UserRegisterRequest,
     UserRegisterResponse,
-    UserCheckTokenResponse,
 )
 from services.api.app.apps.progress import logic
 from services.api.app.config import Config

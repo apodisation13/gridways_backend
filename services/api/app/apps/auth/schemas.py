@@ -1,6 +1,5 @@
-from pydantic import Field, EmailStr
-
 from lib.utils.schemas import Base
+from pydantic import EmailStr, Field
 
 
 class UserRegisterRequest(Base):

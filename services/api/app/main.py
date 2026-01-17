@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 import logging.config
 
-from fastapi import FastAPI, APIRouter
+from fastapi import APIRouter, FastAPI
 from lib.utils.db.pool import Database
 from lib.utils.elk.elastic_logger import ElasticLoggerManager
 from lib.utils.elk.elastic_tracer import ElasticTracerManager

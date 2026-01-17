@@ -1,7 +1,7 @@
 import pytest
 
 from fastapi import FastAPI
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 from lib.utils.db.pool import Database
 import pytest_asyncio
 from services.api.app.config import Config, get_config

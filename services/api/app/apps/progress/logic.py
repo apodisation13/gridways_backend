@@ -2,15 +2,16 @@ import logging
 
 import asyncpg
 
-from services.api.app.apps.cards.schemas import Enemy, EnemyLeader, Card, CardForDeck, Leader, Deck
+from services.api.app.apps.cards.schemas import Card, CardForDeck, Deck, Enemy, EnemyLeader, Leader
 from services.api.app.apps.progress.schemas import (
-    Season,
-    LevelRelatedLevel,
     Level,
-    UserLevel,
+    LevelRelatedLevel,
+    Season,
+    UserCard,
     UserDeck,
     UserLeader,
-    UserCard, UserResources,
+    UserLevel,
+    UserResources,
 )
 
 
@@ -593,8 +594,8 @@ async def open_default_content(
     # 5. инзертим юзеру base-desk
     await connection.execute(
         """
-            INSERT INTO user_decks 
-            (user_id, deck_id) 
+            INSERT INTO user_decks
+            (user_id, deck_id)
             VALUES ($1, 1)
         """,
         user_id,

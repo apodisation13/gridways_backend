@@ -1,10 +1,8 @@
-import traceback
 from unittest.mock import ANY
 
 import pytest
 
 from httpx import AsyncClient
-
 from services.api.app.apps.auth.lib import get_password_hash
 from services.api.app.apps.auth.schemas import UserRegisterResponse
 from services.api.app.apps.progress.schemas import UserResources
@@ -47,7 +45,7 @@ class TestUserRegisterAPI:
                 "email": "testemail@mail.ru",
                 "password": "password",
                 "username": "username",
-            }
+            },
         )
 
         response_json = response.json()
@@ -101,7 +99,7 @@ class TestUserRegisterAPI:
                 "email": "email@mail.ru",
                 "password": "password",
                 # <- вот тут не хватает username
-            }
+            },
         )
 
         response_json = response.json()
@@ -119,7 +117,7 @@ class TestUserRegisterAPI:
                             "type": "missing",
                             "original_message": "Field required",
                         },
-                    ]
+                    ],
                 },
             },
         }
@@ -131,7 +129,7 @@ class TestUserRegisterAPI:
                 "password": "password",
                 "username": "username",
                 "fake": 1,  # <- вот это лишний параметр тут
-            }
+            },
         )
 
         response_json = response.json()
@@ -159,8 +157,8 @@ class TestUserRegisterAPI:
             json={
                 "email": "emailmail.ru",  # <- здесь нет значка собачки
                 "password": "3",  # <- здесь пароль слишком короткий
-                "username": "username"
-            }
+                "username": "username",
+            },
         )
 
         response_json = response.json()
@@ -176,14 +174,15 @@ class TestUserRegisterAPI:
                             "field": "email",
                             "message": "Поле 'Email' должно содержать корректный email адрес",
                             "type": "value_error",
-                            "original_message": "value is not a valid email address: An email address must have an @-sign.",
+                            "original_message": "value is not a valid email address: "
+                                                "An email address must have an @-sign.",
                         },
                         {
                             "field": "password",
                             "message": "Ошибка в поле 'Password': String should have at least 5 characters",
                             "type": "string_too_short",
                             "original_message": "String should have at least 5 characters",
-                        }
+                        },
                     ],
                 },
             },
@@ -206,7 +205,7 @@ class TestUserRegisterAPI:
                 "email": "email@mail.ru",
                 "password": "password",
                 "username": "username2",
-            }
+            },
         )
 
         response_json = response.json()
@@ -216,7 +215,8 @@ class TestUserRegisterAPI:
             "error": {
                 "code": "BAD_REQUEST",
                 "message": "Field {email} already exists",
-                "details": "UserAlreadyExistsError(UniqueViolationError('duplicate key value violates unique constraint \"ix_users_email\"'))",
+                "details": "UserAlreadyExistsError(UniqueViolationError('"
+                           "duplicate key value violates unique constraint \"ix_users_email\"'))",
             },
         }
 
@@ -242,7 +242,7 @@ class TestUserLoginAPI:
             json={
                 "email": "email@mail.ru",
                 "password": "password",
-            }
+            },
         )
 
         response_json = response.json()
@@ -255,7 +255,7 @@ class TestUserLoginAPI:
             "token": {
                 "token_type": "bearer",
                 "access_token": ANY,
-            }
+            },
         }
 
     @pytest.mark.asyncio
@@ -276,7 +276,7 @@ class TestUserLoginAPI:
             json={
                 "email": "email@mail.ru",
                 # <- не прислал тут пароль
-            }
+            },
         )
 
         response_json = response.json()
@@ -292,7 +292,7 @@ class TestUserLoginAPI:
                             'field': 'password',
                             'message': "Поле 'Password' обязательно для заполнения",
                             'type': 'missing',
-                            'original_message': 'Field required'
+                            'original_message': 'Field required',
                         },
                     ],
                 },
@@ -304,7 +304,7 @@ class TestUserLoginAPI:
             json={
                 "email": "email2@mail.ru",  # <- неверный емейл, такого пользователя нет в базе
                 "password": "password",
-            }
+            },
         )
 
         response_json = response.json()
@@ -323,7 +323,7 @@ class TestUserLoginAPI:
             json={
                 "email": "email@mail.ru",
                 "password": "password2",  # <- неверный пароль
-            }
+            },
         )
 
         response_json = response.json()
@@ -333,7 +333,7 @@ class TestUserLoginAPI:
             'error': {
                 "code": "INTERNAL_SERVER_ERROR",
                 "message": "UserIncorrectPasswordError",
-                "details": "UserIncorrectPasswordError()"
+                "details": "UserIncorrectPasswordError()",
             },
         }
 
@@ -356,7 +356,7 @@ class TestUserLoginAPI:
             json={
                 "email": "email@mail.ru",
                 "password": "password",
-            }
+            },
         )
 
         response_json = response.json()
@@ -388,7 +388,7 @@ class TestUserLoginAPI:
             json={
                 "email": user_1.email,
                 "password": "password",
-            }
+            },
         )
 
         response_json = response.json()

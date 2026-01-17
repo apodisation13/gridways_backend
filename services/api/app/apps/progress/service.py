@@ -1,20 +1,37 @@
 import logging
+from typing import TYPE_CHECKING
 
 import asyncpg
 
 from lib.utils.db.pool import Database
-from lib.utils.schemas.game import ResourceActionSubtype, LevelDifficulty, ResourceType, CardActionSubtype, \
-    CardColorName
-from services.api.app.apps.cards.schemas import Card
+from lib.utils.schemas.game import (
+    CardActionSubtype,
+    CardColorName,
+    LevelDifficulty,
+    ResourceActionSubtype,
+    ResourceType,
+)
 from services.api.app.apps.progress import logic
 from services.api.app.apps.progress.schemas import (
+    CardCraftBonusResponse,
+    CardCraftMillResponse,
+    CreateDeckRequest,
+    ListDecksResponse,
+    OpenRelatedLevelsResponse,
+    ResourcesRequest,
+    UserCard,
     UserDatabase,
+    UserLeader,
     UserProgressResponse,
-    UserResources, CreateDeckRequest, ListDecksResponse, ResourcesRequest, UserCard, UserLeader,
-    CardCraftMillResponse, Season, OpenRelatedLevelsResponse, CardCraftBonusResponse,
+    UserResources,
 )
 from services.api.app.config import Config
 from services.api.app.exceptions.exceptions import CraftMillCardProcessError, ManageResourcesProcessError
+
+
+if TYPE_CHECKING:
+    from services.api.app.apps.cards.schemas import Card
+
 
 logger = logging.getLogger(__name__)
 
@@ -130,7 +147,7 @@ class UserProgressService:
             await connection.execute(
                 """
                 DELETE FROM user_decks
-                WHERE 
+                WHERE
                     user_decks.user_id = $1
                     AND user_decks.deck_id = $2
                 """,
@@ -140,7 +157,7 @@ class UserProgressService:
             await connection.execute(
                 """
                 DELETE FROM card_decks
-                WHERE 
+                WHERE
                     card_decks.deck_id = $1
                 """,
                 deck_id,
@@ -148,7 +165,7 @@ class UserProgressService:
             await connection.execute(
                 """
                 DELETE FROM decks
-                WHERE 
+                WHERE
                     decks.id = $1
                 """,
                 deck_id,
@@ -175,8 +192,8 @@ class UserProgressService:
             await connection.fetchrow(
                 """
                     UPDATE decks
-                    SET 
-                        name = $2, 
+                    SET
+                        name = $2,
                         leader_id = $3
                     WHERE
                         decks.id = $1
@@ -219,7 +236,7 @@ class UserProgressService:
     async def manage_resources(
         self,
         user_id: int,
-        resource_request: ResourcesRequest
+        resource_request: ResourcesRequest,
     ) -> UserResources:
         logger.info("Got here for user %s, resource request: %s", user_id, resource_request)
         subtype: ResourceActionSubtype = resource_request.subtype
@@ -232,7 +249,7 @@ class UserProgressService:
                 async with self.db_pool.transaction() as connection:
                     difficulty: LevelDifficulty = await connection.fetchval(
                         """
-                            SELECT difficulty 
+                            SELECT difficulty
                             FROM levels
                             WHERE levels.id = $1
                         """,
@@ -268,7 +285,7 @@ class UserProgressService:
             case subtype.WIN_SEASON_LEVEL:
                 """
                 data: { wood: 201, scraps: 185, etc }
-                Тут придет словарь с ресурсами, которые нужно начислить 
+                Тут придет словарь с ресурсами, которые нужно начислить
                 """
                 async with self.db_pool.connection() as connection:
                     return await self._change_resources(
@@ -280,7 +297,7 @@ class UserProgressService:
             case subtype.BONUS_REWARD:
                 """
                 data: { wood: +-201, scraps: +-185, etc }
-                Тут придет словарь с ресурсами, которые нужно списать или наоборот начислить 
+                Тут придет словарь с ресурсами, которые нужно списать или наоборот начислить
                 Отличие от бонуса в том, что тут нужно проверять, не стало ли минус, и кинуть ошибку если стало
                 """
                 async with self.db_pool.transaction() as connection:
@@ -319,7 +336,7 @@ class UserProgressService:
             SET {', '.join(set_parts)}
             WHERE id = $1
             RETURNING *
-        """
+        """  # noqa: S608
 
         result = await connection.fetchrow(query, *query_params)
         return UserResources(
@@ -347,7 +364,7 @@ class UserProgressService:
                     card_color: CardColorName = await connection.fetchval(
                         """
                             SELECT colors.name
-                            FROM cards 
+                            FROM cards
                             JOIN colors ON cards.color_id = colors.id
                             WHERE cards.id = $1
                         """,
@@ -391,7 +408,7 @@ class UserProgressService:
                             VALUES ($1, $2, 1)
                             ON CONFLICT (user_id, card_id)
                             DO UPDATE
-                            SET 
+                            SET
                                 count = user_cards.count + 1,
                                 updated_at = NOW()
                         """,
@@ -444,7 +461,7 @@ class UserProgressService:
                             VALUES ($1, $2, 1)
                             ON CONFLICT (user_id, leader_id)
                             DO UPDATE
-                            SET 
+                            SET
                                 count = user_leaders.count + 1,
                                 updated_at = NOW()
                         """,
@@ -471,8 +488,8 @@ class UserProgressService:
                     # 1.1. Ищем, карта из дефолтного набора (unlocked) или нет + смотрим ее user_cards.count
                     user_card: dict = await connection.fetchrow(
                         """
-                            SELECT 
-                                cards.unlocked, 
+                            SELECT
+                                cards.unlocked,
                                 user_cards.id,
                                 user_cards.count
                             FROM user_cards
@@ -505,7 +522,7 @@ class UserProgressService:
                     card_count: int = await connection.fetchval(
                         """
                             UPDATE user_cards
-                            SET 
+                            SET
                                 count = user_cards.count - 1,
                                 updated_at = NOW()
                             WHERE user_cards.id = $1
@@ -524,9 +541,9 @@ class UserProgressService:
                     # 2.1. Ищем цвет карты, чтобы понять какие ресурсы за нее
                     card_color: CardColorName = await connection.fetchval(
                         """
-                            SELECT 
+                            SELECT
                                 colors.name
-                            FROM cards 
+                            FROM cards
                             JOIN colors ON cards.color_id = colors.id
                             WHERE cards.id = $1
                         """,
@@ -573,8 +590,8 @@ class UserProgressService:
                     # 1.1. Ищем, карта лидера из дефолтного набора (unlocked) или нет + смотрим ее user_leaders.count
                     user_leader: dict = await connection.fetchrow(
                         """
-                            SELECT 
-                                leaders.unlocked, 
+                            SELECT
+                                leaders.unlocked,
                                 user_leaders.id,
                                 user_leaders.count
                             FROM user_leaders
@@ -607,7 +624,7 @@ class UserProgressService:
                     await connection.fetchrow(
                         """
                             UPDATE user_leaders
-                            SET 
+                            SET
                                 count = user_leaders.count - 1,
                                 updated_at = NOW()
                             WHERE user_leaders.id = $1
@@ -644,8 +661,8 @@ class UserProgressService:
                     )
 
             case _:
-                msg = "Unknow subtype %s for craft/mill card process"
-                logger.error("msg", subtype)
+                msg = "Unknown subtype %s for craft/mill card process"
+                logger.error(msg, subtype)
                 raise CraftMillCardProcessError(msg, subtype)
 
     async def open_level_related_levels(
@@ -661,7 +678,7 @@ class UserProgressService:
             await connection.execute(
                 """
                     UPDATE user_levels
-                    SET 
+                    SET
                         finished = TRUE,
                         updated_at = NOW()
                     FROM levels, level_related_levels
@@ -720,13 +737,13 @@ class UserProgressService:
                         FROM unnest($2::int[]) as card_id
                         GROUP BY card_id
                     )
-                    INSERT INTO user_cards 
+                    INSERT INTO user_cards
                     (user_id, card_id, count)
                     SELECT $1, card_counts.card_id, card_counts.occurrence_count
                     FROM card_counts
                     ON CONFLICT (user_id, card_id)
                     DO UPDATE
-                        SET 
+                        SET
                             count = user_cards.count + EXCLUDED.count,
                             updated_at = NOW()
                     RETURNING user_cards.id;

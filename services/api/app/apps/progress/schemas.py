@@ -1,5 +1,5 @@
 from lib.utils.schemas import Base
-from lib.utils.schemas.game import LevelDifficulty, ResourceActionSubtype, CardActionSubtype
+from lib.utils.schemas.game import CardActionSubtype, LevelDifficulty, ResourceActionSubtype
 from services.api.app.apps.cards.schemas import Card, Deck, Enemy, EnemyLeader, Leader
 
 

@@ -88,7 +88,7 @@ async def validation_exception_handler(
                 "field": field_path,
                 "message": readable_msg,
                 "type": error_type,
-                "original_message": msg
+                "original_message": msg,
             })
 
         return formatted_errors
@@ -151,7 +151,7 @@ async def validation_exception_handler(
                 "message": error_summary,
                 "details": {
                     "validation_errors": validation_errors,
-                }
+                },
             },
         },
         headers={

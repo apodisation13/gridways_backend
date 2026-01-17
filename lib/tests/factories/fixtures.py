@@ -1,7 +1,6 @@
-import pytest_asyncio
-
 from lib.tests.factories import UserFactory
 from lib.utils.models import User
+import pytest_asyncio
 
 
 @pytest_asyncio.fixture
