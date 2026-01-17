@@ -12,11 +12,6 @@ from lib.utils.config.base import get_config
 from lib.utils.db.pool import Database
 
 
-load_env()
-config = get_config()
-db = Database(config)
-
-
 async def upload_with_only_names(file, db_pool, page_name, table_name):
     print(f"Inserting {table_name}")
 
@@ -443,6 +438,11 @@ async def upload_levels_enemies(file, db_pool):
 
 
 async def upload_from_excel():
+    load_env()
+    config = get_config()
+    # config.DB_URL = "postgresql://postgres:pass@localhost:YOUR_DOCKER_DB_OUTSIDE_PORT/docker_db_name"
+    db = Database(config)
+
     data = get_data("database.ods")
 
     db_pool = await db.connect()
