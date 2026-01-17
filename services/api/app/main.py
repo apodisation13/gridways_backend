@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 import logging.config
 
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from lib.utils.db.pool import Database
 from lib.utils.elk.elastic_logger import ElasticLoggerManager
 from lib.utils.elk.elastic_tracer import ElasticTracerManager
@@ -57,7 +57,6 @@ app = FastAPI(
     version="1.0.0",
     docs_url=None,
     redoc_url=None,
-    openapi_url="/api/v1/openapi.json",
 )
 
 add_exceptions(app)
@@ -65,7 +64,11 @@ set_middlewares(app, config, apm_manager)
 mount_static(app, config)
 
 
-app.include_router(swagger_router, prefix="", tags=["swagger"])
-app.include_router(users_router, prefix="/users", tags=["accounts"])
-app.include_router(news_router, prefix="/news", tags=["news"])
-app.include_router(progress_router, prefix="/user-progress", tags=["progress"])
+api_v1_router = APIRouter(prefix="/api/v1")
+
+api_v1_router.include_router(swagger_router, prefix="", tags=["swagger"])
+api_v1_router.include_router(users_router, prefix="/users", tags=["accounts"])
+api_v1_router.include_router(news_router, prefix="/news", tags=["news"])
+api_v1_router.include_router(progress_router, prefix="/user-progress", tags=["progress"])
+
+app.include_router(api_v1_router)
