@@ -538,6 +538,7 @@ async def get_user_resources(
         keys=user_resources["keys"],
     )
 
+
 async def get_game_constants(
     connection: asyncpg.Connection,
 ) -> dict:

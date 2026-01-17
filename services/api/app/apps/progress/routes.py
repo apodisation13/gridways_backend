@@ -22,7 +22,7 @@ router = APIRouter()
 @router.get("/{user_id}")
 async def get_user_progress(
     request: Request,
-    _ = Depends(auth_dependencies.validate_user),
+    _=Depends(auth_dependencies.validate_user),
     user_progress_service: UserProgressService = Depends(get_user_progress_service),
     user_id: int = Path(..., gt=0),
 ) -> UserProgressResponse:
@@ -36,7 +36,7 @@ async def get_user_progress(
 async def create_user_deck(
     request: Request,
     deck: CreateDeckRequest,
-    _ = Depends(auth_dependencies.validate_user),
+    _=Depends(auth_dependencies.validate_user),
     user_progress_service: UserProgressService = Depends(get_user_progress_service),
     user_id: int = Path(..., gt=0),
 ) -> ListDecksResponse:
@@ -50,7 +50,7 @@ async def create_user_deck(
 @router.delete("/{user_id}/alter-deck/{deck_id}")
 async def delete_user_deck(
     request: Request,
-    _ = Depends(auth_dependencies.validate_user),
+    _=Depends(auth_dependencies.validate_user),
     user_progress_service: UserProgressService = Depends(get_user_progress_service),
     user_id: int = Path(..., gt=0),
     deck_id: int = Path(..., gt=0),
@@ -66,7 +66,7 @@ async def delete_user_deck(
 async def change_user_deck(
     request: Request,
     deck: CreateDeckRequest,
-    _ = Depends(auth_dependencies.validate_user),
+    _=Depends(auth_dependencies.validate_user),
     user_progress_service: UserProgressService = Depends(get_user_progress_service),
     user_id: int = Path(..., gt=0),
     deck_id: int = Path(..., gt=0),
@@ -82,7 +82,7 @@ async def change_user_deck(
 @router.patch("/{user_id}/resource")
 async def manage_resources(
     resource_request: ResourcesRequest,
-    _ = Depends(auth_dependencies.validate_user),
+    _=Depends(auth_dependencies.validate_user),
     user_progress_service: UserProgressService = Depends(get_user_progress_service),
     user_id: int = Path(..., gt=0),
 ) -> UserResources:
@@ -96,7 +96,7 @@ async def manage_resources(
 async def manage_craft_mill_card(
     request: Request,
     card_request: CardCraftMillRequest,
-    _ = Depends(auth_dependencies.validate_user),
+    _=Depends(auth_dependencies.validate_user),
     user_progress_service: UserProgressService = Depends(get_user_progress_service),
     user_id: int = Path(..., gt=0),
     card_id: int = Path(..., gt=0),
@@ -113,7 +113,7 @@ async def manage_craft_mill_card(
 async def craft_bonus_cards(
     request: Request,
     craft_bonus_request: CardCraftBonusRequest,
-    _ = Depends(auth_dependencies.validate_user),
+    _=Depends(auth_dependencies.validate_user),
     user_progress_service: UserProgressService = Depends(get_user_progress_service),
     user_id: int = Path(..., gt=0),
 ) -> CardCraftBonusResponse:
@@ -127,7 +127,7 @@ async def craft_bonus_cards(
 @router.patch("/{user_id}/open-related-levels/{user_level_id}")
 async def open_user_related_levels(
     request: Request,
-    _ = Depends(auth_dependencies.validate_user),
+    _=Depends(auth_dependencies.validate_user),
     user_progress_service: UserProgressService = Depends(get_user_progress_service),
     user_id: int = Path(..., gt=0),
     user_level_id: int = Path(..., gt=0),

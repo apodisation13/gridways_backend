@@ -7,4 +7,5 @@ import pytest_asyncio
 def user_factory(db_connection):
     async def factory(**kwargs) -> User:
         return await UserFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory

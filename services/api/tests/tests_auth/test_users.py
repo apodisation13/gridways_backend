@@ -53,11 +53,14 @@ class TestUserRegisterAPI:
         print("54444444444444444", response_json)
 
         assert response.status_code == 200
-        assert response_json == UserRegisterResponse(
-            id=1,
-            username="username",
-            email="testemail@mail.ru",
-        ).model_dump()
+        assert (
+            response_json
+            == UserRegisterResponse(
+                id=1,
+                username="username",
+                email="testemail@mail.ru",
+            ).model_dump()
+        )
 
         users_after: int = await db_connection.fetchval("""SELECT COUNT(*) FROM users""")
         assert users_after == 1
@@ -79,14 +82,17 @@ class TestUserRegisterAPI:
         )
         assert len(user_resources) == 1
 
-        assert dict(user_resources[0]) == UserResources(
-            scraps=1000,
-            wood=1000,
-            kegs=3,
-            big_kegs=1,
-            chests=0,
-            keys=3,
-        ).model_dump()
+        assert (
+            dict(user_resources[0])
+            == UserResources(
+                scraps=1000,
+                wood=1000,
+                kegs=3,
+                big_kegs=1,
+                chests=0,
+                keys=3,
+            ).model_dump()
+        )
 
     @pytest.mark.asyncio
     async def test_register_user_incorrect_data(
@@ -175,7 +181,7 @@ class TestUserRegisterAPI:
                             "message": "Поле 'Email' должно содержать корректный email адрес",
                             "type": "value_error",
                             "original_message": "value is not a valid email address: "
-                                                "An email address must have an @-sign.",
+                            "An email address must have an @-sign.",
                         },
                         {
                             "field": "password",
@@ -216,7 +222,7 @@ class TestUserRegisterAPI:
                 "code": "BAD_REQUEST",
                 "message": "Field {email} already exists",
                 "details": "UserAlreadyExistsError(UniqueViolationError('"
-                           "duplicate key value violates unique constraint \"ix_users_email\"'))",
+                'duplicate key value violates unique constraint "ix_users_email"\'))',
             },
         }
 
@@ -283,16 +289,16 @@ class TestUserLoginAPI:
 
         assert response.status_code == 422
         assert response_json == {
-            'error': {
-                'code': 'VALIDATION_ERROR',
-                'message': "Поле 'Password' обязательно для заполнения",
-                'details': {
-                    'validation_errors': [
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Поле 'Password' обязательно для заполнения",
+                "details": {
+                    "validation_errors": [
                         {
-                            'field': 'password',
-                            'message': "Поле 'Password' обязательно для заполнения",
-                            'type': 'missing',
-                            'original_message': 'Field required',
+                            "field": "password",
+                            "message": "Поле 'Password' обязательно для заполнения",
+                            "type": "missing",
+                            "original_message": "Field required",
                         },
                     ],
                 },
@@ -311,10 +317,10 @@ class TestUserLoginAPI:
 
         assert response.status_code == 500
         assert response_json == {
-            'error': {
-                'code': 'INTERNAL_SERVER_ERROR',
-                'message': 'UserNotFoundError',
-                'details': 'UserNotFoundError()',
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "UserNotFoundError",
+                "details": "UserNotFoundError()",
             },
         }
 
@@ -330,7 +336,7 @@ class TestUserLoginAPI:
 
         assert response.status_code == 500
         assert response_json == {
-            'error': {
+            "error": {
                 "code": "INTERNAL_SERVER_ERROR",
                 "message": "UserIncorrectPasswordError",
                 "details": "UserIncorrectPasswordError()",
@@ -363,10 +369,10 @@ class TestUserLoginAPI:
 
         assert response.status_code == 500
         assert response_json == {
-            'error': {
-                'code': 'INTERNAL_SERVER_ERROR',
-                'message': 'UserNotFoundError',
-                'details': 'UserNotFoundError()',
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "UserNotFoundError",
+                "details": "UserNotFoundError()",
             },
         }
 
@@ -407,7 +413,7 @@ class TestUserLoginAPI:
         response_json = response.json()
 
         assert response.status_code == 401
-        assert response_json == {'detail': 'Missing authorization header'}
+        assert response_json == {"detail": "Missing authorization header"}
 
         # а теперь присылает совсем неверный токен
         response = await client.get(
@@ -418,7 +424,7 @@ class TestUserLoginAPI:
         response_json = response.json()
 
         assert response.status_code == 401
-        assert response_json == {'detail': "Invalid authorization format. Use 'Bearer <token>'"}
+        assert response_json == {"detail": "Invalid authorization format. Use 'Bearer <token>'"}
 
         # а теперь как будто юзер пытается взять данные от чужого юзера
         response = await client.get(
@@ -429,4 +435,4 @@ class TestUserLoginAPI:
         response_json = response.json()
 
         assert response.status_code == 401
-        assert response_json == {'detail': "Access denied"}
+        assert response_json == {"detail": "Access denied"}

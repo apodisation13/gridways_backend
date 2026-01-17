@@ -13,6 +13,7 @@ async def app(db_pool) -> FastAPI:
     """Настроенное приложение FastAPI для тестов"""
     # Устанавливаем тестовый конфиг
     from services.api.app.main import app as fastapi_app
+
     fastapi_app.state.config = get_app_settings()
 
     # Создаем Database обертку используя существующий пул из фикстуры
@@ -23,6 +24,7 @@ async def app(db_pool) -> FastAPI:
 
     # Устанавливаем глобальное приложение
     from services.api.app.dependencies import set_global_app
+
     set_global_app(fastapi_app)
 
     yield fastapi_app

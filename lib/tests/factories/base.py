@@ -65,7 +65,6 @@ class BaseModelFactory(AsyncFactory):
                 RETURNING *
             """  # noqa: S608
 
-
         result = await conn.fetchrow(query, *values)
         result_dict = dict(result)
 

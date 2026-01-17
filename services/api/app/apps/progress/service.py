@@ -322,7 +322,7 @@ class UserProgressService:
         self,
         connection: asyncpg.Connection,
         user_id: int,
-        resources_to_change: dict[ResourceType: int],
+        resources_to_change: dict[ResourceType:int],
     ) -> UserResources:
         set_parts = []
         query_params = [user_id]
@@ -333,7 +333,7 @@ class UserProgressService:
 
         query = f"""
             UPDATE user_resources
-            SET {', '.join(set_parts)}
+            SET {", ".join(set_parts)}
             WHERE id = $1
             RETURNING *
         """  # noqa: S608
@@ -728,7 +728,7 @@ class UserProgressService:
         cards_ids: list[int],
         base_url: str,
     ) -> CardCraftBonusResponse:
-        logger.info("Crafting bonus cards %s for user %s",cards_ids, user_id)
+        logger.info("Crafting bonus cards %s for user %s", cards_ids, user_id)
         async with self.db_pool.transaction() as connection:
             r = await connection.fetch(
                 """

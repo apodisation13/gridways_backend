@@ -60,154 +60,203 @@ from services.api.tests.factories.factories import (
 def faction_factory(db_connection):
     async def factory(**kwargs) -> Faction:
         return await FactionFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def color_factory(db_connection):
     async def factory(**kwargs) -> Color:
         return await ColorFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def game_constants_factory(db_connection):
     async def factory(**kwargs) -> GameConstants:
         return await GameConstantsFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def type_factory(db_connection):
     async def factory(**kwargs) -> Type:
         return await TypeFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def ability_factory(db_connection):
     async def factory(**kwargs) -> Ability:
         return await AbilityFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def passive_ability_factory(db_connection):
     async def factory(**kwargs) -> PassiveAbility:
         return await PassiveAbilityFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 # Игровые элементы
 @pytest_asyncio.fixture
 def leader_factory(db_connection):
     async def factory(**kwargs) -> Leader:
         return await LeaderFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def card_factory(db_connection):
     async def factory(**kwargs) -> Card:
         return await CardFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def deck_factory(db_connection):
     async def factory(**kwargs) -> Deck:
         return await DeckFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def card_deck_factory(db_connection):
     async def factory(**kwargs) -> CardDeck:
         return await CardDeckFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 # Вражеские элементы
 @pytest_asyncio.fixture
 def move_factory(db_connection):
     async def factory(**kwargs) -> Move:
         return await MoveFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def enemy_passive_ability_factory(db_connection):
     async def factory(**kwargs) -> EnemyPassiveAbility:
         return await EnemyPassiveAbilityFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def enemy_leader_ability_factory(db_connection):
     async def factory(**kwargs) -> EnemyLeaderAbility:
         return await EnemyLeaderAbilityFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def deathwish_factory(db_connection):
     async def factory(**kwargs) -> Deathwish:
         return await DeathwishFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def enemy_factory(db_connection):
     async def factory(**kwargs) -> Enemy:
         return await EnemyFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def enemy_leader_factory(db_connection):
     async def factory(**kwargs) -> EnemyLeader:
         return await EnemyLeaderFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 # Уровни и сезоны
 @pytest_asyncio.fixture
 def season_factory(db_connection):
     async def factory(**kwargs) -> Season:
         return await SeasonFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def level_factory(db_connection):
     async def factory(**kwargs) -> Level:
         return await LevelFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def level_related_levels_factory(db_connection):
     async def factory(**kwargs) -> LevelRelatedLevels:
         return await LevelRelatedLevelsFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def level_enemy_factory(db_connection):
     async def factory(**kwargs) -> LevelEnemy:
         return await LevelEnemyFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 # Пользовательские данные
 @pytest_asyncio.fixture
 def user_resource_factory(db_connection):
     async def factory(**kwargs) -> UserResource:
         return await UserResourceFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def user_card_factory(db_connection):
     async def factory(**kwargs) -> UserCard:
         return await UserCardFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def user_leader_factory(db_connection):
     async def factory(**kwargs) -> UserLeader:
         return await UserLeaderFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def user_deck_factory(db_connection):
     async def factory(**kwargs) -> UserDeck:
         return await UserDeckFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
+
 
 @pytest_asyncio.fixture
 def user_level_factory(db_connection):
     async def factory(**kwargs) -> UserLevel:
         return await UserLevelFactory.create_in_db(conn=db_connection, **kwargs)
+
     return factory
 
 
@@ -290,7 +339,7 @@ async def init_db_cards(
     )
 
     base_deck = await deck_factory(
-        name = "base-deck",
+        name="base-deck",
         leader_id=leader_1.id,
     )
     await card_deck_factory(
