@@ -102,7 +102,7 @@ class LeaderFactory(BaseModelFactory):
     image_original = factory.Faker("image_url")
     image_tablet = factory.Faker("image_url")
     image_phone = factory.Faker("image_url")
-    unlocked = True
+    unlocked = False
     faction_id = factory.SubFactory(FactionFactory)
     ability_id = factory.SubFactory(AbilityFactory)
     damage = 0
@@ -124,7 +124,7 @@ class CardFactory(BaseModelFactory):
     image_original = factory.Faker("image_url")
     image_tablet = factory.Faker("image_url")
     image_phone = factory.Faker("image_url")
-    unlocked = True
+    unlocked = False
     faction_id = factory.SubFactory(FactionFactory)
     color_id = factory.SubFactory(ColorFactory)
     type_id = factory.SubFactory(TypeFactory)

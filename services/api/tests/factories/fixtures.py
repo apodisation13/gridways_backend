@@ -227,7 +227,13 @@ async def init_db_cards(
     enemy_leader_ability_factory,
     enemy_passive_ability_factory,
     deathwish_factory,
-enemy_factory, enemy_leader_factory, season_factory, level_factory, level_related_levels_factory, level_enemy_factory):
+    enemy_factory,
+    enemy_leader_factory,
+    season_factory,
+    level_factory,
+    level_related_levels_factory,
+    level_enemy_factory,
+):
     """
     Создаем тут по цепочке:
     - 2 фракции
@@ -235,9 +241,16 @@ enemy_factory, enemy_leader_factory, season_factory, level_factory, level_relate
     - 2 типа
     - 1 абилка
     - 1 пассивная абилка
-    - 2 лидера
-    - 3 карты
-    - base-deck в которой есть лидер и 3 карты (через связи card-deck)
+    - 1 лидера (открытый)
+    - 3 карты (2 открыты, 1 нет)
+    - base-deck в которой есть лидер и 3 карты (через связи card_decks)
+    - 2 типа хода врагов
+    - 1 пассивка лидера врагов, 1 пассивка врагов, 1 завещание
+    - 1 лидер врагов
+    - 3 врага
+    - 1 сезон
+    - 3 уровня (1 открыт, 2 нет)
+    - связи между сезоном и уровнем, уровнем и его детьми, уровнем и врагами
     """
     f1 = await faction_factory(name="Neutrals")
     f2 = await faction_factory(name="Soldiers")
@@ -252,22 +265,21 @@ enemy_factory, enemy_leader_factory, season_factory, level_factory, level_relate
     leader_1 = await leader_factory(
         faction_id=f1.id,
         ability_id=a.id,
-    )
-    leader_2 = await leader_factory(
-        faction_id=f2.id,
-        ability_id=a.id,
+        unlocked=True,
     )
     card_1 = await card_factory(
         faction_id=f1.id,
         ability_id=a.id,
         color_id=c1.id,
         type_id=t1.id,
+        unlocked=True,
     )
     card_2 = await card_factory(
         faction_id=f2.id,
         ability_id=a.id,
         color_id=c2.id,
         type_id=t2.id,
+        unlocked=True,
     )
     card_3 = await card_factory(
         faction_id=f2.id,
@@ -334,14 +346,15 @@ enemy_factory, enemy_leader_factory, season_factory, level_factory, level_relate
         name="Level 1",
         season_id=s1.id,
         enemy_leader_id=enemy_leader.id,
+        unlocked=True,
     )
     l2 = await level_factory(
-        name="Level 1",
+        name="Level 2",
         season_id=s1.id,
         enemy_leader_id=enemy_leader.id,
     )
     l3 = await level_factory(
-        name="Level 1",
+        name="Level 3",
         season_id=s1.id,
         enemy_leader_id=enemy_leader.id,
     )
