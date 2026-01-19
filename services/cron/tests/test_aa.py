@@ -4,6 +4,7 @@ import pytest
 @pytest.mark.usefixtures("setup_database")
 def test_aaaaa():
     print(999)
+    print(999)
     assert True
 
 
