@@ -112,6 +112,7 @@ jobs:
     outputs:
       services_to_build: ${{ steps.detect.outputs.services }}
       build_all: ${{ steps.detect.outputs.build_all }}
+      services_json: ${{ steps.detect.outputs.services_json }}
 
     steps:
       - name: Получаем код
@@ -218,6 +219,15 @@ jobs:
           echo "📦 Сервисы для сборки: $CHANGED_SERVICES"
           echo "services=$CHANGED_SERVICES" >> $GITHUB_OUTPUT
           echo "build_all=false" >> $GITHUB_OUTPUT
+          
+          if [[ -n "$CHANGED_SERVICES" ]]; then
+            # Способ 1: Через sed и tr (простой)
+            SERVICES_JSON="[\"$(echo "$CHANGED_SERVICES" | sed 's/,/","/g')\"]"
+            echo "✅ Преобразовано в JSON: $SERVICES_JSON"
+            echo "services_json=$SERVICES_JSON" >> $GITHUB_OUTPUT
+          else
+            echo "services_json=[]" >> $GITHUB_OUTPUT
+          fi
 
   build-images:
     needs: [ linters-and-tests, analyze-changes]
@@ -228,7 +238,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: ${{ fromJson(format('[{0}]', replace(needs.analyze-changes.outputs.services_to_build, ',', '","'))) }}
+        service: ${{ fromJson(needs.analyze-changes.outputs.services_json) }}
 
     steps:
       - name: Получаем код
