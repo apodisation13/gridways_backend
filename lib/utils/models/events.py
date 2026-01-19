@@ -20,7 +20,6 @@ class Event(BaseModel):
     )
 
 
-# test comment
 class EventLog(BaseModel, TimestampMixin):
     __tablename__ = "event_log"
 
