@@ -423,6 +423,10 @@ jobs:
             
             cd /srv/cardgame/backend/${{ env.MODE }}
             
+            export REGISTRY=${{ env.REGISTRY }}
+            export BACKEND_IMAGE_NAME=${{ env.FRONTEND_IMAGE_NAME }}
+            export MODE=${{ env.MODE }}
+            
             export TAG="${{ github.event.inputs.environment }}"
             
             echo "📥 Логинимся в registry..."
