@@ -18,7 +18,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository }}
+  BACKEND_IMAGE_NAME: ${{ github.repository }}
 
 
 jobs:
@@ -312,6 +312,10 @@ jobs:
             
             cd ${{ secrets.PROJECT_PATH }}
             
+            export REGISTRY=${{ env.REGISTRY }}
+            export BACKEND_IMAGE_NAME=${{ env.FRONTEND_IMAGE_NAME }}
+            export MODE=${{ env.MODE }}
+            
             export TAG="${{ steps.vars.outputs.tag }}"
             
             # Логин в registry
@@ -331,7 +335,7 @@ jobs:
             echo ""
             echo "✅ Деплой завершён!"
             docker-compose ps  
-  
+            
 
   # ==========================================
   # 🖐️ РУЧНОЙ ФЛОУ (только для workflow_dispatch)

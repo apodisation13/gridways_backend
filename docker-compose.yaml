@@ -240,7 +240,7 @@ services:
   # ============ МИКРОСЕРВИСЫ ============
   migrant:
     <<: *common
-    image: ghcr.io/${GITHUB_REPOSITORY:-owner/repo}/migrant:${TAG:-latest}
+    image: ${REGISTRY}/${BACKEND_IMAGE_NAME}/migrant:${MODE}
     container_name: gridways-migrant
     depends_on:
       postgres:
@@ -251,7 +251,7 @@ services:
 
   api:
     <<: *common
-    image: ghcr.io/${GITHUB_REPOSITORY:-owner/repo}/api:${TAG:-latest}
+    image: ${REGISTRY}/${BACKEND_IMAGE_NAME}/api:${MODE}
     container_name: gridways-api
     depends_on:
       - migrant
@@ -281,7 +281,7 @@ services:
 
   rest:
     <<: *common
-    image: ghcr.io/${GITHUB_REPOSITORY:-owner/repo}/rest:${TAG:-latest}
+    image: ${REGISTRY}/${BACKEND_IMAGE_NAME}/rest:${MODE}
     container_name: gridways-rest
     depends_on:
       - migrant
@@ -300,7 +300,7 @@ services:
 
   cron:
     <<: *common
-    image: ghcr.io/${GITHUB_REPOSITORY:-owner/repo}/cron:${TAG:-latest}
+    image: ${REGISTRY}/${BACKEND_IMAGE_NAME}/cron:${MODE}
     container_name: gridways-cron
     depends_on:
       - migrant
@@ -312,7 +312,7 @@ services:
 
   events:
     <<: *common
-    image: ghcr.io/${GITHUB_REPOSITORY:-owner/repo}/events:${TAG:-latest}
+    image: ${REGISTRY}/${BACKEND_IMAGE_NAME}/events:${MODE}
     container_name: gridways-events
     depends_on:
       - migrant
