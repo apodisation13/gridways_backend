@@ -4,6 +4,7 @@ import os
 import threading
 import time
 
+import config
 from lib.utils.config.base import BaseConfig
 from lib.utils.config.env_types import EnvType
 
@@ -50,6 +51,7 @@ class ElasticsearchHandler(logging.Handler):
 
     def _init_elasticsearch(self):
         try:
+            print("STR53!!!!!!!!!!!!!!!!!!!", self.service_name, self.config.ELASTIC_HOST, self.config.ELASTIC_USERNAME)
             self.es = Elasticsearch(
                 [self.config.ELASTIC_HOST],
                 verify_certs=False,
