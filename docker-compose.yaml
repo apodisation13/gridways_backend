@@ -12,7 +12,8 @@ x-common: &common
   networks:
     - app-network
   env_file:
-    - ./.env.docker
+    - path: .env.docker
+      required: false  # не валидировать на этапе docker build, docker push, есть ли вообще этот файл
 
 services:
   # ============ БАЗОВЫЕ СЕРВИСЫ ============
