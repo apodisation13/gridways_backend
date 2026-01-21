@@ -37,7 +37,7 @@ class ElasticsearchHandler(logging.Handler):
     def __init__(
         self,
         service_name: str,
-        c: BaseConfig,
+        config: BaseConfig,
         retry_count: int = 3,
     ):
         super().__init__()
@@ -45,20 +45,20 @@ class ElasticsearchHandler(logging.Handler):
         self.retry_count = retry_count
         self.es = None
         self._sending = threading.local()  # Для предотвращения рекурсии
-        self.c = c
+        self.config = config
         self._init_elasticsearch()
 
     def _init_elasticsearch(self):
         try:
-            print("STR53!!!!!!!!!!!!!!!!!!!", self.service_name, self.c.ELASTIC_HOST, self.c.ELASTIC_USERNAME)
+            print("STR53!!!!!!!!!!!!!!!!!!!", self.service_name, self.config.ELASTIC_HOST, self.config.ELASTIC_USERNAME)
             self.es = Elasticsearch(
-                [self.c.ELASTIC_HOST],
+                [self.config.ELASTIC_HOST],
                 verify_certs=False,
                 ssl_show_warn=False,
                 request_timeout=30,
                 max_retries=3,
                 retry_on_timeout=True,
-                basic_auth=(self.c.ELASTIC_USERNAME, self.c.ELASTIC_PASSWORD),
+                basic_auth=(self.config.ELASTIC_USERNAME, self.config.ELASTIC_PASSWORD),
             )
 
             info = self.es.info()
@@ -148,7 +148,7 @@ class ElasticsearchHandler(logging.Handler):
 
 
 def setup_elastic_logging_global(
-    c: BaseConfig,
+    config: BaseConfig,
     service_name: str,
     delay_seconds: int = 5,
 ) -> logging.Logger:
@@ -182,7 +182,7 @@ def setup_elastic_logging_global(
 
     # Создаем хендлер
     es_handler = ElasticsearchHandler(
-        c=c,
+        config=config,
         service_name=service_name,
     )
     es_handler.setLevel(logging.INFO)
@@ -216,16 +216,16 @@ class ElasticLoggerManager:
 
     def initialize(
         self,
-        c: BaseConfig,
+        config: BaseConfig,
         service_name: str,
         delay_seconds: int = 5,
     ) -> None:
-        if c.ENV_TYPE not in EnvType.need_elastic():
+        if config.ENV_TYPE not in EnvType.need_elastic():
             return None
 
         if not self._initialized:
             setup_elastic_logging_global(
-                c=c,
+                config=config,
                 service_name=service_name,
                 delay_seconds=delay_seconds,
             )
