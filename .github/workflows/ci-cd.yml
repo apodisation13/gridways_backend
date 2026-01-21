@@ -369,6 +369,7 @@ jobs:
           cat > .env << EOF
           DB_PORT_OUTSIDE=${{ secrets.DB_PORT_OUTSIDE }}
           DB_NAME=${{ secrets.DB_NAME }}
+          DB_HOST=${{ secrest.DB_HOST }} 
           DB_USER=${{ secrets.DB_USER }}
           DB_PASSWORD=${{ secrets.DB_PASSWORD }}
           DJANGO_SUPERUSER_USERNAME=${{ secrets.DJANGO_SUPERUSER_USERNAME }}
@@ -425,6 +426,7 @@ jobs:
             CONFIG=${{ secrets.CONFIG }}
             DB_PORT_OUTSIDE=${{ secrets.DB_PORT_OUTSIDE }}
             DB_NAME=${{ secrets.DB_NAME }}
+            DB_HOST=${{ secrest.DB_HOST }} 
             DB_USER=${{ secrets.DB_USER }}
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             DJANGO_SUPERUSER_USERNAME=${{ secrets.DJANGO_SUPERUSER_USERNAME }}
