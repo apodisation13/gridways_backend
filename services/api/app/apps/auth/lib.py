@@ -3,7 +3,6 @@ import hashlib
 import secrets
 
 from jose import ExpiredSignatureError, JWTError, jwt
-
 from services.api.app.config import Config
 from services.api.app.exceptions import UserIncorrectPasswordError
 

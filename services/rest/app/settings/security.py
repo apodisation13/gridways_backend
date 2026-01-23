@@ -2,6 +2,7 @@ from pathlib import Path
 
 from services.rest.app.config import Config, get_config
 
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
