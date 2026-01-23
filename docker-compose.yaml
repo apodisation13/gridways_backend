@@ -12,7 +12,8 @@ x-common: &common
   networks:
     - app-network
   env_file:
-    - ./.env.docker
+    - path: .env.docker
+      required: false  # не валидировать на этапе docker build, docker push, есть ли вообще этот файл
 
 services:
   # ============ БАЗОВЫЕ СЕРВИСЫ ============
@@ -32,7 +33,7 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U $$DB_USER"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -94,6 +95,8 @@ services:
       - discovery.type=single-node
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
 
+      - ingest.geoip.downloader.enabled=false
+
       # отключаем логи Elasticsearch
       - logger.level=ERROR
       - logger.org.elasticsearch=ERROR
@@ -107,6 +110,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
 
   elasticsearch-setup:
     <<: *common
@@ -240,7 +249,7 @@ services:
   # ============ МИКРОСЕРВИСЫ ============
   migrant:
     <<: *common
-    image: ghcr.io/${GITHUB_REPOSITORY:-owner/repo}/migrant:${TAG:-latest}
+    image: ${REGISTRY:-ghcr.io}/${BACKEND_IMAGE_NAME:-gridways_backend}/migrant:${MODE:-latest}
     container_name: gridways-migrant
     depends_on:
       postgres:
@@ -251,7 +260,7 @@ services:
 
   api:
     <<: *common
-    image: ghcr.io/${GITHUB_REPOSITORY:-owner/repo}/api:${TAG:-latest}
+    image: ${REGISTRY:-ghcr.io}/${BACKEND_IMAGE_NAME:-gridways_backend}/api:${MODE:-latest}
     container_name: gridways-api
     depends_on:
       - migrant
@@ -266,7 +275,7 @@ services:
     volumes:
       - shared_static:/shared_static
     expose:
-      - "8000"
+      - "8001"
     environment:
       - APM_SERVER_URL=http://apm-server:8200
       - APM_SECRET_TOKEN=${APM_SECRET_TOKEN}
@@ -281,11 +290,12 @@ services:
 
   rest:
     <<: *common
-    image: ghcr.io/${GITHUB_REPOSITORY:-owner/repo}/rest:${TAG:-latest}
+    image: ${REGISTRY:-ghcr.io}/${BACKEND_IMAGE_NAME:-gridways_backend}/rest:${MODE:-latest}
     container_name: gridways-rest
     depends_on:
       - migrant
       - kibana
+    restart: unless-stopped
     build:
       context: .
       dockerfile: services/rest/docker/Dockerfile
@@ -300,7 +310,7 @@ services:
 
   cron:
     <<: *common
-    image: ghcr.io/${GITHUB_REPOSITORY:-owner/repo}/cron:${TAG:-latest}
+    image: ${REGISTRY:-ghcr.io}/${BACKEND_IMAGE_NAME:-gridways_backend}/cron:${MODE:-latest}
     container_name: gridways-cron
     depends_on:
       - migrant
@@ -312,7 +322,7 @@ services:
 
   events:
     <<: *common
-    image: ghcr.io/${GITHUB_REPOSITORY:-owner/repo}/events:${TAG:-latest}
+    image: ${REGISTRY:-ghcr.io}/${BACKEND_IMAGE_NAME:-gridways_backend}/events:${MODE:-latest}
     container_name: gridways-events
     depends_on:
       - migrant

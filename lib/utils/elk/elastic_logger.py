@@ -50,6 +50,7 @@ class ElasticsearchHandler(logging.Handler):
 
     def _init_elasticsearch(self):
         try:
+            print("STR53!!!!!!!!!!!!!!!!!!!", self.service_name, self.config.ELASTIC_HOST, self.config.ELASTIC_USERNAME)
             self.es = Elasticsearch(
                 [self.config.ELASTIC_HOST],
                 verify_certs=False,
