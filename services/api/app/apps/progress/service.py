@@ -673,10 +673,7 @@ class UserProgressService:
                     SET
                         finished = TRUE,
                         updated_at = NOW()
-                    FROM levels, level_related_levels
-                    WHERE user_levels.level_id = levels.id
-                      AND levels.id = level_related_levels.level_id
-                      AND user_levels.id = $2
+                    WHERE user_levels.id = $2
                       AND user_levels.user_id = $1;
                 """,
                 user_id,
