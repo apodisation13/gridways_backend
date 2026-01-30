@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from fastapi import FastAPI, Request, status
@@ -6,10 +7,14 @@ from fastapi.responses import JSONResponse
 from services.api.app.exceptions import UserAlreadyExistsError
 
 
+logger = logging.getLogger(__name__)
+
+
 async def global_exception_handler(
     request: Request,
     exc: Exception,
 ) -> JSONResponse:
+    logger.error(exc.__repr__())
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
@@ -144,6 +149,8 @@ async def validation_exception_handler(
             error_summary = f"Ошибки валидации в полях: {', '.join(error_fields)}"
     else:
         error_summary = "Ошибка валидации данных"
+
+    logger.error("%s, %s", error_summary, validation_errors)
 
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

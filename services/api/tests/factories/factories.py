@@ -27,6 +27,7 @@ from lib.utils.models import (
     UserLevel,
     UserResource,
 )
+from lib.utils.schemas.game import LevelDifficulty
 
 
 class FactionFactory(BaseModelFactory):
@@ -258,7 +259,7 @@ class LevelFactory(BaseModelFactory):
 
     name = factory.Sequence(lambda n: f"Level {n}")
     starting_enemies_number = 3
-    difficulty = "NORMAL"
+    difficulty = LevelDifficulty.EASY
     unlocked = False
     x = 0
     y = 0

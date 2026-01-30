@@ -433,3 +433,20 @@ class TestUserLoginAPI:
 
         assert response.status_code == 401
         assert response_json == {"detail": "Access denied"}
+
+    @pytest.mark.asyncio
+    async def test_user_login_empty_data(
+        self,
+        client: AsyncClient,
+        db_connection,
+        user_factory,
+    ) -> None:
+        response = await client.post(
+            self.endpoint,
+            json={
+                "email": "",
+                "password": "",
+            },
+        )
+
+        assert response.status_code == 422
