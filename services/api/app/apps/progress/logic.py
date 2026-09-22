@@ -54,7 +54,7 @@ async def get_seasons(
             JOIN level_enemies ON levels.id = level_enemies.level_id
             LEFT JOIN user_levels ON levels.id = user_levels.level_id AND user_levels.user_id = $1
             LEFT JOIN user_seasons ON user_seasons.season_id = seasons.id AND user_seasons.user_id = $1
-            ORDER BY seasons.id;
+            ORDER BY seasons.id, levels.id;
         """,
         user_id,
     )

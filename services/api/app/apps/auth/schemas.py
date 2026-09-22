@@ -13,13 +13,13 @@ class UserRegisterRequest(Base):
     username: str = Field(
         ...,
         min_length=5,
-        max_length=50,
+        max_length=30,
     )
     email: EmailStr
     password: str = Field(
         ...,
         min_length=5,
-        max_length=50,
+        max_length=30,
     )
 
 
@@ -34,7 +34,7 @@ class UserLoginRequest(Base):
     password: str = Field(
         ...,
         min_length=5,
-        max_length=50,
+        max_length=30,
     )
 
 
