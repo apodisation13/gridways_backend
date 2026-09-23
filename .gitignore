@@ -33,4 +33,4 @@ db.json
 *.jpg
 *.webp
 *.ods
-docs/scripts/upload_from_excel.py
+/docs/scripts/upload_from_excel.py
