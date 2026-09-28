@@ -143,7 +143,7 @@ class ElasticsearchHandler(logging.Handler):
 
             # Отправляем в Elasticsearch БЕЗ логирования
             self.es.index(
-                index=f"logs-{self.service_name}-{datetime.now().strftime('%Y.%m.%d')}",
+                index=f"logs-{self.service_name}-default",
                 document=log_data,
                 refresh=False,
             )
