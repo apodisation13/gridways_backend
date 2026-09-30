@@ -1,5 +1,6 @@
 from lib.utils.schemas import Base
 from lib.utils.schemas.game import CardActionSubtype, LevelDifficulty, ResourceActionSubtype
+from pydantic import Field
 from services.api.app.apps.cards.schemas import Deck
 
 
@@ -134,7 +135,11 @@ class UserProgressResponse(Base):
 
 
 class CreateDeckRequest(Base):
-    deck_name: str
+    deck_name: str = Field(
+        ...,
+        min_length=3,
+        max_length=50,
+    )
     leader_id: int
     cards: list[int]
 

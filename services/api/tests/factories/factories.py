@@ -19,6 +19,7 @@ from lib.utils.models import (
     LevelEnemy,
     LevelRelatedLevels,
     Move,
+    News,
     PassiveAbility,
     Season,
     SeasonRelatedSeasons,
@@ -46,6 +47,16 @@ from lib.utils.schemas.game import (
     UserStatsRecordType,
 )
 from services.api.app.apps.preferences.schemas import DEFAULT_PREFERENCES
+
+
+class NewsFactory(BaseModelFactory, TimeStampMixinFactory):
+    class Meta:
+        model = News
+
+    title = factory.Sequence(lambda n: f"News {n}")
+    text = "News text"
+    is_active = True
+    priority = 0
 
 
 class FactionFactory(BaseModelFactory):
