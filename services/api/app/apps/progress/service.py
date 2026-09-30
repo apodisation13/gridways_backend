@@ -604,6 +604,25 @@ class UserProgressService:
                         logger.error(msg, card_id, user_id)
                         raise CraftMillCardProcessError(msg % (card_id, user_id))
 
+                    # 1.6. Если после милла стало 0, то проверяем, есть ли эта карта хоть в одной колоде юзера
+                    # если есть - отменяем транзакцию
+                    if card_count == 0:
+                        card_in_any_user_deck: int = await connection.fetchval(
+                            """
+                            SELECT COUNT(*) FROM user_decks
+                            JOIN card_decks ON user_decks.deck_id = card_decks.deck_id
+                            WHERE
+                                user_decks.user_id = $1
+                                AND card_decks.card_id = $2
+                            """,
+                            user_id,
+                            card_id,
+                        )
+                        if card_in_any_user_deck:
+                            msg = "Cannot mill card %s for user %s, card is present in user deck"
+                            logger.error(msg, card_id, user_id)
+                            raise CraftMillCardProcessError(msg % (card_id, user_id))
+
                     # 2. А теперь начисляем ресурсы за униточженную карту
                     # 2.1. Ищем цвет карты, чтобы понять какие ресурсы за нее
                     card_color: CardColorName = await connection.fetchval(
@@ -684,16 +703,42 @@ class UserProgressService:
                         raise CraftMillCardProcessError(msg % (card_id, user_id))
 
                     # 1.4. Пытаемся уничтожить эту карту лидера, поставив ей user_leaders.count -= 1
-                    await connection.fetchrow(
+                    leader_count: int = await connection.fetchval(
                         """
                             UPDATE user_leaders
                             SET
                                 count = user_leaders.count - 1,
                                 updated_at = NOW()
                             WHERE user_leaders.id = $1
+                            RETURNING user_leaders.count
                         """,
                         user_leader["id"],
                     )
+
+                    # 1.5. Если вдруг как-то карты стало отрицательное значение, отменяем транзакцию
+                    if leader_count < 0:
+                        msg = "Cannot mill leader %s for user %s, count seems to be negative value"
+                        logger.error(msg, card_id, user_id)
+                        raise CraftMillCardProcessError(msg % (card_id, user_id))
+
+                    # 1.6. Если после милла стало 0, то проверяем, есть ли этот лидер хоть в одной колоде юзера
+                    # если есть - отменяем транзакцию
+                    if leader_count == 0:
+                        leader_in_any_user_deck: int = await connection.fetchval(
+                            """
+                            SELECT COUNT(*) FROM user_decks
+                            JOIN decks ON user_decks.deck_id = decks.id
+                            WHERE
+                                user_decks.user_id = $1
+                                AND decks.leader_id = $2
+                            """,
+                            user_id,
+                            card_id,
+                        )
+                        if leader_in_any_user_deck:
+                            msg = "Cannot mill leader %s for user %s, leader is present in user deck"
+                            logger.error(msg, card_id, user_id)
+                            raise CraftMillCardProcessError(msg % (card_id, user_id))
 
                     # 2. А теперь начисляем ресурсы за униточженную карту лидера
                     # 2.1. С лидером проще - за него всегда одна и та же сумма

@@ -21,6 +21,8 @@ class TestManageMillProcesAPI:
         user_upgrades_factory,
         user_leader_factory,
         leader_factory,
+        deck_factory,
+        user_deck_factory,
     ):
         user_id = user_login_fixture["id"]
         access_token = user_login_fixture["token"]["access_token"]
@@ -104,6 +106,41 @@ class TestManageMillProcesAPI:
         response_json = response.json()
         message = response_json["error"]["message"]
         assert message == f"Cannot mill leader {new_leader_2.id} for user {user_id}, seems user doesn't have it"
+
+        # кейс 5 - миллим лидера, который есть в какой-то колоде, не базовой - нельзя
+        # card_deck для лидера не принциально
+        new_leader_3 = await leader_factory(
+            faction_id=1,
+            ability_id=1,
+            unlocked=False,
+        )
+        await user_leader_factory(
+            leader_id=new_leader_3.id,
+            user_id=user_id,
+            count=1,
+        )
+        new_deck = await deck_factory(
+            name="Новая колода",
+            leader_id=new_leader_3.id,
+        )
+        await user_deck_factory(
+            user_id=user_id,
+            deck_id=new_deck.id,
+        )
+
+        response = await client.post(
+            self.endpoint.format(user_id=user_id, card_id=new_leader_3.id),
+            json={
+                "subtype": CardActionSubtype.MILL_LEADER,
+            },
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+        assert response.status_code == 400
+
+        response_json = response.json()
+        message = response_json["error"]["message"]
+        assert message == f"Cannot mill leader {new_leader_3.id} for user {user_id}, leader is present in user deck"
 
     @pytest.mark.usefixtures("init_db_cards")
     @pytest.mark.asyncio
@@ -196,6 +233,9 @@ class TestManageMillProcesAPI:
         user_upgrades_factory,
         user_card_factory,
         card_factory,
+        deck_factory,
+        user_deck_factory,
+        card_deck_factory,
     ):
         user_id = user_login_fixture["id"]
         access_token = user_login_fixture["token"]["access_token"]
@@ -276,6 +316,49 @@ class TestManageMillProcesAPI:
         response_json = response.json()
         message = response_json["error"]["message"]
         assert message == f"Cannot mill card {new_card.id} for user {user_id}, seems user doesn't have it"
+
+        # кейс 6 - миллим карту, которая есть в какой-то колоде (не базовой) - нельзя
+        new_card_2 = await card_factory(
+            faction_id=1,
+            ability_id=1,
+            color_id=1,
+            type_id=1,
+            unlocked=False,
+        )
+        await user_card_factory(card_id=new_card_2.id, user_id=user_id, count=1)
+
+        new_deck = await deck_factory(
+            name="Новая колода",
+            leader_id=1,  # он есть из фикстуры init_db_cards
+        )
+        await user_deck_factory(
+            user_id=user_id,
+            deck_id=new_deck.id,
+        )
+        # вот эту и будем миллить
+        await card_deck_factory(
+            card_id=new_card_2.id,
+            deck_id=new_deck.id,
+        )
+        # а эта из базовой
+        await card_deck_factory(
+            card_id=1,
+            deck_id=new_deck.id,
+        )
+
+        response = await client.post(
+            self.endpoint.format(user_id=user_id, card_id=new_card_2.id),
+            json={
+                "subtype": CardActionSubtype.MILL_CARD,
+            },
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+        assert response.status_code == 400
+
+        response_json = response.json()
+        message = response_json["error"]["message"]
+        assert message == f"Cannot mill card {new_card_2.id} for user {user_id}, card is present in user deck"
 
     @pytest.mark.parametrize(
         "card_color, expected_resource_type, expected_scarps_add",
