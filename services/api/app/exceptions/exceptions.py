@@ -26,6 +26,10 @@ class CraftMillCardProcessError(Exception):
     pass
 
 
+class DeckRequestError(Exception):
+    pass
+
+
 class PostStatsError(Exception):
     pass
 

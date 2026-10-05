@@ -6,6 +6,7 @@ from lib.utils.schemas.game import LevelDifficulty, ResourceType, UpgradeSubtype
 from services.api.app.apps.cards.schemas import Deck
 from services.api.app.apps.game_const import logic as game_const_logic
 from services.api.app.apps.progress.schemas import (
+    CreateDeckRequest,
     Level,
     LevelRelatedLevel,
     Season,
@@ -18,10 +19,129 @@ from services.api.app.apps.progress.schemas import (
     UserResources,
     UserSeason,
 )
-from services.api.app.exceptions.exceptions import NegativeResourcesError
+from services.api.app.exceptions.exceptions import DeckRequestError, NegativeResourcesError
 
 
 logger = logging.getLogger(__name__)
+
+
+def reject_deck_request(user_id: int, message: str) -> None:
+    logger.error("Invalid deck request from user %s: %s", user_id, message)
+    raise DeckRequestError(message)
+
+
+async def validate_deck_request(
+    connection: asyncpg.Connection,
+    user_id: int,
+    deck: CreateDeckRequest,
+    creating: bool,
+) -> None:
+    """
+    Функция валидации колоды, которую юзер хочет сохранить. Тут мы проверяем:
+    1. Нет повторов в картах
+    2. Проверяем, что лидер колоды открыт и доступен (есть count >= 1 в user_leaders)
+    3. Проверяем, что все карты в колоде - тоже открыты у юзера (count >= 1 в user_cards)
+    4. Проверяем количество карт в колоде с учетом уровня прокачки юзера
+    5. При создании колоды - так же проверяем максимальный запас колод с учетом прокачки юзера
+    """
+    # 1. Проверяем, что нет повторяющихся карт
+    if len(deck.cards) != len(set(deck.cards)):
+        reject_deck_request(user_id, "A deck cannot contain duplicate cards")
+
+    # 2. Провяряем что лидер открыт у юзера
+    leader: int | None = await connection.fetchval(
+        """
+            SELECT
+                leader_id
+            FROM
+                user_leaders
+            WHERE
+                user_id = $1
+                AND leader_id = $2
+                AND count >= 1
+            FOR SHARE
+        """,
+        user_id,
+        deck.leader_id,
+    )
+    if leader is None:
+        reject_deck_request(user_id, "The selected leader is not unlocked")
+
+    # 3. Берем все карты из запроса колоды и ищем те, которых НЕТ у юзера
+    owned_cards = await connection.fetch(
+        """
+            SELECT
+                card_id
+            FROM
+                user_cards
+            WHERE
+                user_id = $1
+                AND card_id = ANY($2::int[])
+                AND count >= 1
+            FOR SHARE
+        """,
+        user_id,
+        deck.cards,
+    )
+    unavailable = set(deck.cards) - {row["card_id"] for row in owned_cards}
+    if unavailable:
+        reject_deck_request(user_id, f"Cards are not unlocked: {unavailable}")
+
+    # 4. Ищем текущий уровень двух параметров:
+    # - MAX_CARDS_IN_DECK - проверяем длину колоды от уровня 0 до уровня юзера
+    # - MAX_DECKS - проверяем сколько сейчас уже у юзера колод
+
+    # 4.1. Берем все игровые константы и апгрейды из них.
+    game_const = await game_const_logic.get_game_constants(connection=connection)
+    game_upgrades = game_const["upgrades"][UpgradeType.GAME]["upgrades"]
+
+    # 4.2. Ищем апгрейды юзера
+    user_upgrades = await connection.fetchval(
+        """
+            SELECT
+                data::jsonb
+            FROM
+                user_upgrades
+            WHERE
+                id = $1
+            FOR SHARE
+        """,
+        user_id,
+    )
+
+    # 4.3. Из них берем только апгрейды для MAX_CARDS_IN_DECK, MAX_CARDS_IN_DECK
+    user_game_upgrades: dict = (user_upgrades or {}).get(UpgradeType.GAME, {})
+
+    # 4.4. Берем конфиг из game_const для типа MAX_CARDS_IN_DECK
+    max_cards_in_deck_config: dict = game_upgrades[UpgradeSubtype.MAX_CARDS_IN_DECK]["upgrades"]
+
+    # 4.5 Ищем минимальное значение и текущее для юзера
+    min_cards_config: int = max_cards_in_deck_config["0"]["value"]
+    max_user_cards: int = max_cards_in_deck_config[str(user_game_upgrades.get(UpgradeSubtype.MAX_CARDS_IN_DECK, 0))][
+        "value"
+    ]
+
+    # 4.6. Проверяем собственно длину колоды
+    if not min_cards_config <= len(deck.cards) <= max_user_cards:
+        reject_deck_request(user_id, f"Deck size must be between {min_cards_config} and {max_user_cards} cards")
+
+    # 5. Если создаем колоду, то еще надо посмотреть на текущий уровень MAX_DECKS
+    if creating:
+        max_decks_config = game_upgrades[UpgradeSubtype.MAX_DECKS]["upgrades"]
+        max_user_decks = max_decks_config[str(user_game_upgrades.get(UpgradeSubtype.MAX_DECKS, 0))]["value"]
+        current_decks = await connection.fetchval(
+            """
+                SELECT
+                    COUNT(*)
+                FROM
+                    user_decks
+                WHERE
+                    user_id = $1
+            """,
+            user_id,
+        )
+        if current_decks >= max_user_decks:
+            reject_deck_request(user_id, f"Maximum number of decks reached: {max_user_decks}")
 
 
 async def get_seasons(
@@ -329,7 +449,14 @@ async def construct_user_decks(
             JOIN leaders ON decks.leader_id = leaders.id
             WHERE
                 user_decks.user_id = $1
-            ORDER BY decks.updated_at DESC;
+            ORDER BY
+                decks.updated_at DESC,
+                decks.id DESC,
+                cards.color_id DESC,
+                (cards.data ->> 'damage')::int DESC,
+                (cards.data ->> 'hp')::int DESC,
+                (cards.data ->> 'charges')::int DESC,
+                cards.id ASC;
         """,
         user_id,
     )

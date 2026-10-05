@@ -17,6 +17,7 @@ from lib.utils.models import (
     LevelEnemy,
     LevelRelatedLevels,
     Move,
+    News,
     PassiveAbility,
     Season,
     SeasonRelatedSeasons,
@@ -51,6 +52,7 @@ from services.api.tests.factories.factories import (
     LevelFactory,
     LevelRelatedLevelsFactory,
     MoveFactory,
+    NewsFactory,
     PassiveAbilityFactory,
     SeasonFactory,
     SeasonRelatedSeasonsFactory,
@@ -67,6 +69,14 @@ from services.api.tests.factories.factories import (
 
 
 # Базовые модели
+@pytest_asyncio.fixture
+def news_factory(db_connection):
+    async def factory(**kwargs) -> News:
+        return await NewsFactory.create_in_db(conn=db_connection, **kwargs)
+
+    return factory
+
+
 @pytest_asyncio.fixture
 def faction_factory(db_connection):
     async def factory(**kwargs) -> Faction:
@@ -312,6 +322,7 @@ def user_upgrades_factory(db_connection):
 
 @pytest_asyncio.fixture
 async def init_db_cards(
+    request,
     game_constants_factory,
     faction_factory,
     color_factory,
@@ -335,6 +346,9 @@ async def init_db_cards(
     level_enemy_factory,
 ):
     """
+    Данные игровых констант можно передать через parametrize("init_db_cards", [data], indirect=True).
+    Без параметра используются значения GameConstantsFactory по умолчанию.
+
     Создаем тут по цепочке:
     - 2 фракции
     - 3 цвета
@@ -353,7 +367,11 @@ async def init_db_cards(
     - 4 уровня (2 открыты, 2 нет) (3 для сезона 1, 1 для сезона 2)
     - связи между сезоном и уровнем, уровнем и его детьми, уровнем и врагами
     """
-    await game_constants_factory()
+    data = getattr(request, "param", None)
+    if data is not None:
+        await game_constants_factory(data=data)
+    else:
+        await game_constants_factory()
 
     f1 = await faction_factory(name="Neutral")
     f2 = await faction_factory(name="Soldiers")

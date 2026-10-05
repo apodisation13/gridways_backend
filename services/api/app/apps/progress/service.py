@@ -1,5 +1,8 @@
+from contextlib import asynccontextmanager
 import logging
 from typing import TYPE_CHECKING
+
+import asyncpg
 
 from lib.utils.db.pool import Database
 from lib.utils.schemas.game import (
@@ -24,10 +27,16 @@ from services.api.app.apps.progress.schemas import (
     UserResources,
 )
 from services.api.app.config import Config
-from services.api.app.exceptions.exceptions import CraftMillCardProcessError, ManageResourcesProcessError
+from services.api.app.exceptions.exceptions import (
+    CraftMillCardProcessError,
+    DeckRequestError,
+    ManageResourcesProcessError,
+)
 
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
     from services.api.app.apps.cards.schemas import Card
 
 logger = logging.getLogger(__name__)
@@ -41,6 +50,45 @@ class UserProgressService:
     ):
         self.db_pool = db_pool
         self.config = config
+
+    @asynccontextmanager
+    async def _deck_transaction(
+        self,
+        user_id: int,
+        deck_id: int | None = None,
+    ) -> "AsyncIterator[asyncpg.Connection]":
+        try:
+            async with self.db_pool.transaction() as connection:
+                # Сериализуем создание/изменение/удаление колод одного пользователя.
+                await connection.fetchval(
+                    """
+                        SELECT id
+                        FROM users
+                        WHERE id = $1
+                        FOR UPDATE
+                    """,
+                    user_id,
+                )
+                if deck_id is not None:
+                    owned = await connection.fetchval(
+                        """
+                            SELECT id
+                            FROM user_decks
+                            WHERE
+                                user_id = $1
+                                AND deck_id = $2
+                            FOR UPDATE
+                        """,
+                        user_id,
+                        deck_id,
+                    )
+                    if owned is None:
+                        logic.reject_deck_request(user_id, "Deck does not exist or does not belong to the user")
+                yield connection
+        except asyncpg.ForeignKeyViolationError as exc:
+            message = "Deck references missing data or is still used by another record"
+            logger.error("Invalid deck reference for user %s, deck %s: %s", user_id, deck_id, exc)
+            raise DeckRequestError(message) from exc
 
     async def get_user_progress(
         self,
@@ -87,7 +135,16 @@ class UserProgressService:
         user_id: int,
         deck: CreateDeckRequest,
     ) -> ListDecksResponse:
-        async with self.db_pool.transaction() as connection:
+        logger.info("Creating deck {%s} for user %s", deck, user_id)
+
+        async with self._deck_transaction(user_id) as connection:
+            await logic.validate_deck_request(
+                connection=connection,
+                user_id=user_id,
+                deck=deck,
+                creating=True,
+            )
+
             deck_id = await connection.fetchval(
                 """
                     INSERT INTO decks
@@ -134,7 +191,12 @@ class UserProgressService:
         user_id: int,
         deck_id: int,
     ) -> ListDecksResponse:
-        async with self.db_pool.transaction() as connection:
+        logger.info("Deleting deck %s for user %s", deck_id, user_id)
+
+        async with self._deck_transaction(user_id, deck_id) as connection:
+            if deck_id == 1:
+                logic.reject_deck_request(user_id, "The base deck cannot be deleted")
+
             await connection.execute(
                 """
                 DELETE FROM user_decks
@@ -177,7 +239,12 @@ class UserProgressService:
         deck_id: int,
         deck: CreateDeckRequest,
     ) -> ListDecksResponse:
-        async with self.db_pool.transaction() as connection:
+        async with self._deck_transaction(user_id, deck_id) as connection:
+            if deck_id == 1:
+                logic.reject_deck_request(user_id, "The base deck cannot be altered")
+
+            await logic.validate_deck_request(connection, user_id, deck, creating=False)
+
             await connection.fetchrow(
                 """
                     UPDATE decks
@@ -537,6 +604,25 @@ class UserProgressService:
                         logger.error(msg, card_id, user_id)
                         raise CraftMillCardProcessError(msg % (card_id, user_id))
 
+                    # 1.6. Если после милла стало 0, то проверяем, есть ли эта карта хоть в одной колоде юзера
+                    # если есть - отменяем транзакцию
+                    if card_count == 0:
+                        card_in_any_user_deck: int = await connection.fetchval(
+                            """
+                            SELECT COUNT(*) FROM user_decks
+                            JOIN card_decks ON user_decks.deck_id = card_decks.deck_id
+                            WHERE
+                                user_decks.user_id = $1
+                                AND card_decks.card_id = $2
+                            """,
+                            user_id,
+                            card_id,
+                        )
+                        if card_in_any_user_deck:
+                            msg = "Cannot mill card %s for user %s, card is present in user deck"
+                            logger.error(msg, card_id, user_id)
+                            raise CraftMillCardProcessError(msg % (card_id, user_id))
+
                     # 2. А теперь начисляем ресурсы за униточженную карту
                     # 2.1. Ищем цвет карты, чтобы понять какие ресурсы за нее
                     card_color: CardColorName = await connection.fetchval(
@@ -617,16 +703,42 @@ class UserProgressService:
                         raise CraftMillCardProcessError(msg % (card_id, user_id))
 
                     # 1.4. Пытаемся уничтожить эту карту лидера, поставив ей user_leaders.count -= 1
-                    await connection.fetchrow(
+                    leader_count: int = await connection.fetchval(
                         """
                             UPDATE user_leaders
                             SET
                                 count = user_leaders.count - 1,
                                 updated_at = NOW()
                             WHERE user_leaders.id = $1
+                            RETURNING user_leaders.count
                         """,
                         user_leader["id"],
                     )
+
+                    # 1.5. Если вдруг как-то карты стало отрицательное значение, отменяем транзакцию
+                    if leader_count < 0:
+                        msg = "Cannot mill leader %s for user %s, count seems to be negative value"
+                        logger.error(msg, card_id, user_id)
+                        raise CraftMillCardProcessError(msg % (card_id, user_id))
+
+                    # 1.6. Если после милла стало 0, то проверяем, есть ли этот лидер хоть в одной колоде юзера
+                    # если есть - отменяем транзакцию
+                    if leader_count == 0:
+                        leader_in_any_user_deck: int = await connection.fetchval(
+                            """
+                            SELECT COUNT(*) FROM user_decks
+                            JOIN decks ON user_decks.deck_id = decks.id
+                            WHERE
+                                user_decks.user_id = $1
+                                AND decks.leader_id = $2
+                            """,
+                            user_id,
+                            card_id,
+                        )
+                        if leader_in_any_user_deck:
+                            msg = "Cannot mill leader %s for user %s, leader is present in user deck"
+                            logger.error(msg, card_id, user_id)
+                            raise CraftMillCardProcessError(msg % (card_id, user_id))
 
                     # 2. А теперь начисляем ресурсы за униточженную карту лидера
                     # 2.1. С лидером проще - за него всегда одна и та же сумма
