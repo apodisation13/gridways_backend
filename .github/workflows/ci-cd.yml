@@ -75,6 +75,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r lib/requirements-dev.txt
         pip install -r services/api/requirements.txt
+        pip install -r services/frontend_logs/requirements.txt
         pip install -r services/cron/requirements.txt
         pip install -r services/events/requirements.txt
         pip install -r services/migrant/requirements.txt
@@ -175,14 +176,14 @@ jobs:
           if [[ "$LIB_UTILS_CHANGED" == "true" ]]; then
             echo "📚 Изменены общие утилиты — при мердже будем билдить ВСЕ сервисы"
             echo "build_all=true" >> $GITHUB_OUTPUT
-            echo "services=migrant api rest events cron ws" >> $GITHUB_OUTPUT
+            echo "services=migrant api frontend_logs rest events cron ws" >> $GITHUB_OUTPUT
             exit 0
           fi
 
           # ПРАВИЛО 3: Определяем измененные сервисы
           echo "🔎 Ищем измененные микросервисы..."
           CHANGED_SERVICES=""
-          ALL_SERVICES=("migrant" "api" "rest" "events" "cron" "ws")
+          ALL_SERVICES=("migrant" "api" "frontend_logs" "rest" "events" "cron" "ws")
 
           for service in "${ALL_SERVICES[@]}"; do
             for file in $CHANGED_FILES; do
