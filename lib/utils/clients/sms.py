@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 class SmsClient(BaseClient):
     """Клиент для отправки SMS сообщений"""
+
     # он не работает
 
     def __init__(self, config: BaseConfig):
