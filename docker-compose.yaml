@@ -288,6 +288,32 @@ services:
       - ELASTIC_APM_ENVIRONMENT=development
       - ELASTIC_APM_ENABLED=true
 
+  frontend_logs:
+    <<: *common
+    image: ${REGISTRY:-ghcr.io}/${BACKEND_IMAGE_NAME:-gridways_backend}/frontend_logs:${MODE:-latest}
+    container_name: gridways-frontend-logs
+    depends_on:
+      - elasticsearch
+      - kibana
+      - apm-server
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: services/frontend_logs/docker/Dockerfile
+    expose:
+      - "8003"
+    environment:
+      - APM_SERVER_URL=http://apm-server:8200
+      - APM_SECRET_TOKEN=${APM_SECRET_TOKEN}
+      - APM_ENABLED=true
+      - APM_DEBUG=false
+
+      - ELASTIC_APM_SERVICE_NAME=frontend-logs
+      - ELASTIC_APM_SERVER_URL=http://apm-server:8200
+      - ELASTIC_APM_SECRET_TOKEN=${APM_SECRET_TOKEN}
+      - ELASTIC_APM_ENVIRONMENT=development
+      - ELASTIC_APM_ENABLED=true
+
   ws:
     <<: *common
     image: ${REGISTRY:-ghcr.io}/${BACKEND_IMAGE_NAME:-gridways_backend}/ws:${MODE:-latest}
@@ -355,6 +381,7 @@ services:
     depends_on:
       - rest
       - api
+      - frontend_logs
       - ws
       - kibana
     volumes:
