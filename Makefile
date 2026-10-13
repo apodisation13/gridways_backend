@@ -33,7 +33,7 @@ run-cron:
 run-events:
 	$(PYTHON) services/events/app/main.py
 run-rest:
-	$(PYTHON) services/rest/app/manage.py runserver 8001
+	$(PYTHON) services/rest/app/manage.py runserver 8004
 run-frontend-logs:
 	$(UVICORN) services.frontend_logs.app.main:app --reload --host 0.0.0.0 --port 8003
 

@@ -483,6 +483,9 @@ networks:
   proxy:
     name: proxy
     driver: bridge
+    driver_opts:
+      # MTU внешнего интерфейса сервера ens3 — 1450.
+      com.docker.network.driver.mtu: "1450"
 
 volumes:
   docker_postgres_data:
