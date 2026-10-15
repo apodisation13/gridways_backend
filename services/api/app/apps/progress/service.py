@@ -117,7 +117,7 @@ class UserProgressService:
                 user_id=user_id,
             )
 
-            user_seasons = await logic.construct_seasons(
+            user_seasons = await logic.get_user_seasons(
                 connection=connection,
                 user_id=user_id,
             )
@@ -891,7 +891,7 @@ class UserProgressService:
                         season_id,
                     )
 
-            user_seasons = await logic.construct_seasons(
+            user_seasons = await logic.get_user_seasons(
                 connection=connection,
                 user_id=user_id,
             )

@@ -28,4 +28,5 @@ class CardsService:
                 leaders=await logic.get_leaders(connection, base_url),
                 enemies=await logic.get_enemies(connection, base_url),
                 enemy_leaders=await logic.get_enemy_leaders(connection, base_url),
+                seasons=await logic.construct_seasons(connection),
             )
