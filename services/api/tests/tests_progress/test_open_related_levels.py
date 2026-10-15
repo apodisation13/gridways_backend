@@ -62,12 +62,14 @@ class TestOpenRelatedLevelsAPI:
 
         response_json = response.json()
 
-        # в 1м сезоне добавился 1 уровень!
-        levels = response_json["seasons"][0]["season"]["levels"]
-        assert len(levels) == 4  # 3 было по дефолту, и еще 1 мы в этом тесте создали
-        # во 2м сезоне без изменения
-        levels = response_json["seasons"][1]["season"]["levels"]
-        assert len(levels) == 1
+        # теперь ручка возвращает только список открытых/пройденных уровней ЮЗЕРА, а не все
+        levels: dict = response_json["seasons"]["1"]["levels"]
+        assert levels == {
+            str(level.id): {
+                "user_level_id": user_level.id,
+                "finished": True,
+            },
+        }
 
         user_levels: list[dict] = await db_connection.fetch("""SELECT * FROM user_levels""")
         assert len(user_levels) == 1
@@ -83,6 +85,7 @@ class TestOpenRelatedLevelsAPI:
         user_login_fixture,
         # fixtures for test
         user_level_factory,
+        user_season_factory,
     ):
         """
         Базовая фикстура добавила уже 3 разных уровня, и там у уровня 1 есть связанные: 2 и 3
@@ -92,6 +95,11 @@ class TestOpenRelatedLevelsAPI:
         """
         user_id = user_login_fixture["id"]
         access_token = user_login_fixture["token"]["access_token"]
+
+        await user_season_factory(
+            user_id=user_id,
+            season_id=1,
+        )
 
         # 1й уровень открыт у юзера, но еще не пройден
         user_level = await user_level_factory(
@@ -113,11 +121,21 @@ class TestOpenRelatedLevelsAPI:
 
         response_json = response.json()
 
-        levels = response_json["seasons"][0]["season"]["levels"]
-        assert len(levels) == 3  # 3 было по дефолту
-
-        levels = response_json["seasons"][1]["season"]["levels"]
-        assert len(levels) == 1  # для сезона 2 ничего не поменялось
+        levels = response_json["seasons"]["1"]["levels"]
+        assert levels == {
+            "1": {
+                "user_level_id": user_level.id,
+                "finished": True,
+            },
+            "2": {
+                "user_level_id": 2,
+                "finished": False,
+            },
+            "3": {
+                "user_level_id": 3,
+                "finished": False,
+            },
+        }
 
         user_levels: list[dict] = await db_connection.fetch("""SELECT * FROM user_levels ORDER BY updated_at""")
 
@@ -140,8 +158,21 @@ class TestOpenRelatedLevelsAPI:
 
         response_json = response.json()
 
-        levels = response_json["seasons"][0]["season"]["levels"]
-        assert len(levels) == 3
+        levels = response_json["seasons"]["1"]["levels"]
+        assert levels == {
+            "1": {
+                "user_level_id": user_level.id,
+                "finished": True,
+            },
+            "2": {
+                "user_level_id": 2,
+                "finished": False,
+            },
+            "3": {
+                "user_level_id": 3,
+                "finished": False,
+            },
+        }
 
         user_levels: list[dict] = await db_connection.fetch("""SELECT * FROM user_levels ORDER BY updated_at""")
 
@@ -164,8 +195,21 @@ class TestOpenRelatedLevelsAPI:
 
         response_json = response.json()
 
-        levels = response_json["seasons"][0]["season"]["levels"]
-        assert len(levels) == 3
+        levels = response_json["seasons"]["1"]["levels"]
+        assert levels == {
+            "1": {
+                "user_level_id": user_level.id,
+                "finished": True,
+            },
+            "2": {
+                "user_level_id": 2,
+                "finished": True,  # <- вот тут теперь стало True
+            },
+            "3": {
+                "user_level_id": 3,
+                "finished": False,
+            },
+        }
 
         user_levels: list[dict] = await db_connection.fetch("""SELECT * FROM user_levels ORDER BY updated_at DESC""")
 
@@ -193,6 +237,7 @@ class TestOpenRelatedLevelsAPI:
         user_login_fixture,
         # fixtures for test
         user_level_factory,
+        user_season_factory,
     ):
         """
         Базовая фикстура добавила уже 3 разных уровня, и там у уровня 1 есть связанные: 2 и 3
@@ -201,14 +246,24 @@ class TestOpenRelatedLevelsAPI:
         user_id = user_login_fixture["id"]
         access_token = user_login_fixture["token"]["access_token"]
 
+        await user_season_factory(
+            user_id=user_id,
+            season_id=1,
+        )
+        # в этом тесте еще проверяем открытость второго сезона у юзера
+        await user_season_factory(
+            user_id=user_id,
+            season_id=2,
+        )
+
         # 1й уровень открыт у юзера, но еще не пройден
-        user_level = await user_level_factory(
+        user_level_1 = await user_level_factory(
             user_id=user_id,
             level_id=1,
             finished=False,
         )
         # 3й уровень открыт у юзера, и не важно, пройден он или нет
-        await user_level_factory(
+        user_level_3 = await user_level_factory(
             user_id=user_id,
             level_id=3,
             finished=True,
@@ -216,7 +271,7 @@ class TestOpenRelatedLevelsAPI:
 
         # проходит 1й уровень
         response = await client.patch(
-            self.endpoint.format(user_id=user_id, user_level_id=user_level.id),
+            self.endpoint.format(user_id=user_id, user_level_id=user_level_1.id),
             headers={"Authorization": f"Bearer {access_token}"},
         )
 
@@ -224,11 +279,24 @@ class TestOpenRelatedLevelsAPI:
 
         response_json = response.json()
 
-        levels = response_json["seasons"][0]["season"]["levels"]
-        assert len(levels) == 3  # 3 было по дефолту
+        levels = response_json["seasons"]["1"]["levels"]
+        assert levels == {
+            "1": {
+                "user_level_id": user_level_1.id,
+                "finished": True,
+            },
+            "2": {
+                "user_level_id": 3,
+                "finished": False,  # <- вот тут открылось
+            },
+            "3": {
+                "user_level_id": user_level_3.id,
+                "finished": True,
+            },
+        }
 
-        levels = response_json["seasons"][1]["season"]["levels"]
-        assert len(levels) == 1  # для сезона 2 ничего не поменялось
+        levels = response_json["seasons"]["2"]["levels"]
+        assert levels == {}
 
         # поскольку там транзакция, то по updated_at не совсем корректно смотреть
         user_levels: list[dict] = await db_connection.fetch("""SELECT * FROM user_levels ORDER BY created_at DESC""")
@@ -255,7 +323,6 @@ class TestOpenRelatedLevelsAPI:
         user_season_factory,
         season_factory,
         level_factory,
-        level_enemy_factory,
         season_related_seasons_factory,
     ):
         """
@@ -312,7 +379,7 @@ class TestOpenRelatedLevelsAPI:
             unlocked=False,
         )
         # два уровня для сезона 3 - только один открыт
-        level_of_season_3 = await level_factory(
+        await level_factory(
             season_id=season_3.id,
             enemy_leader_id=1,
             unlocked=True,
@@ -321,11 +388,6 @@ class TestOpenRelatedLevelsAPI:
             season_id=season_3.id,
             enemy_leader_id=1,
             unlocked=False,
-        )
-        # чтобы ручка корректно вернула, что этот уровень есть вообще, по коду стоит JOIN level_enemies
-        await level_enemy_factory(
-            level_id=level_of_season_3.id,
-            enemy_id=1,
         )
         # связь сезона 1 с новым сезоном 3
         await season_related_seasons_factory(
@@ -404,6 +466,8 @@ class TestOpenRelatedLevelsAPI:
         )
 
         assert response.status_code == 200
+        response_json = response.json()
+        print(response_json)
 
         # у 3 сезона нет связей, и еще один уровень висит у него без связей
         user_seasons: list[dict] = await db_connection.fetch("""SELECT * FROM user_seasons ORDER BY updated_at DESC""")

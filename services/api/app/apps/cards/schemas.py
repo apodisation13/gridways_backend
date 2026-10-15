@@ -1,4 +1,5 @@
 from lib.utils.schemas import Base
+from lib.utils.schemas.game import LevelDifficulty
 from services.api.app.utils.images import build_image_url
 
 
@@ -183,8 +184,43 @@ class Enemy(Base):
         )
 
 
+class LevelRelatedLevel(Base):
+    related_level_id: int | None
+    line: str | None
+    connection: str | None
+
+
+class Level(Base):
+    id: int
+    name: str
+    starting_enemies_number: int
+    difficulty: LevelDifficulty
+    x: int
+    y: int
+    enemy_leader: int
+    enemies: list[int]
+    children: list[LevelRelatedLevel]
+
+
+class SeasonRelatedSeason(Base):
+    related_season_id: int | None
+    line: str | None
+    connection: str | None
+
+
+class Season(Base):
+    id: int
+    name: str
+    description: str
+    x: int
+    y: int
+    levels: list[Level]
+    children: list[SeasonRelatedSeason]
+
+
 class CardsResponse(Base):
     cards: list[Card]
     leaders: list[Leader]
     enemy_leaders: dict[int, EnemyLeader]
     enemies: dict[int, Enemy]
+    seasons: dict[int, Season]

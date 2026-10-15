@@ -1,5 +1,5 @@
 from lib.utils.schemas import Base
-from lib.utils.schemas.game import CardActionSubtype, LevelDifficulty, ResourceActionSubtype
+from lib.utils.schemas.game import CardActionSubtype, ResourceActionSubtype
 from pydantic import Field
 from services.api.app.apps.cards.schemas import Deck
 
@@ -54,61 +54,15 @@ class UserResources(Base):
         )
 
 
-class LevelRelatedLevel(Base):
-    related_level_id: int | None
-    line: str | None
-    connection: str | None
-
-
-class Level(Base):
-    id: int
-    name: str
-    starting_enemies_number: int
-    difficulty: LevelDifficulty
-    x: int
-    y: int
-    enemy_leader: int
-    enemies: list[int]
-    children: list[LevelRelatedLevel]
-
-
 class UserLevel(Base):
-    id: int | None
-    unlocked: bool
-    finished: bool | None
-    level: Level
-
-
-class SeasonRelatedSeason(Base):
-    related_season_id: int | None
-    line: str | None
-    connection: str | None
-
-
-class Season(Base):
-    id: int
-    name: str
-    description: str
-    x: int
-    y: int
-    levels: list[UserLevel]
-    children: list[SeasonRelatedSeason]
-
-
-class Stats(Base):
-    total_levels: int
-    finished_levels: int = 0
-    unlocked_levels: int = 0
-    easy_levels: int = 0
-    normal_levels: int = 0
-    hard_levels: int = 0
+    user_level_id: int
+    finished: bool
 
 
 class UserSeason(Base):
-    id: int | None
-    finished: bool | None
-    season: Season
-    stats: Stats
+    user_season_id: int
+    finished: bool
+    levels: dict[int, UserLevel]
 
 
 class UserCard(Base):
@@ -131,7 +85,7 @@ class UserProgressResponse(Base):
     user_cards: dict[int, UserCard]
     user_leaders: dict[int, UserLeader]
     user_decks: list[UserDeck]
-    user_seasons: list[UserSeason]
+    user_seasons: dict[int, UserSeason]
 
 
 class CreateDeckRequest(Base):
@@ -164,7 +118,7 @@ class CardCraftMillResponse(Base):
 
 
 class OpenRelatedLevelsResponse(Base):
-    seasons: list[UserSeason]
+    seasons: dict[int, UserSeason]
 
 
 class CardCraftBonusRequest(Base):
