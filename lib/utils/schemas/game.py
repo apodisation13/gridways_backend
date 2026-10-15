@@ -652,6 +652,8 @@ class UpgradeSubtype(StrEnumChoices):
     REDRAWS_INITIAL = "redraws_initial"
     REDRAWS_DRAWN = "redraws_drawn"
     CARDS_DRAWN = "cards_drawn"
+    FULL_HAND_REDRAW = "full_hand_redraw"
+    MAX_EMPTY_PASSES = "max_empty_passes"
 
     AVATAR = "avatar"
     THEME = "theme"
@@ -693,6 +695,8 @@ DEFAULT_USER_UPGRADES = {
         UpgradeSubtype.CARDS_DRAWN: 0,
         UpgradeSubtype.MAX_IMMUNE_TURNS: 0,
         UpgradeSubtype.IMMUNE_MAGICS_TURNS: 0,
+        UpgradeSubtype.FULL_HAND_REDRAW: 0,
+        UpgradeSubtype.MAX_EMPTY_PASSES: 0,
     },
     UpgradeType.SETTINGS: {
         UpgradeSubtype.AVATAR: 0,
@@ -1376,6 +1380,171 @@ DEFAULT_UPGRADES: dict[UpgradeType, dict] = {
                         },
                     },
                     4: {"value": 5, "next": None},
+                },
+            },
+            UpgradeSubtype.FULL_HAND_REDRAW: {
+                "ordering": 0,
+                "title": "Замена карт при полной руке",
+                "upgrades": {
+                    0: {
+                        "value": 0,
+                        "next": {
+                            ResourceType.MONEY: -1000,
+                            ResourceType.FLOWERS: -100,
+                            ResourceType.SCRAPS: -500,
+                            ResourceType.BRONZE_INGOTS: -3,
+                            ResourceType.SILVER_INGOTS: -1,
+                        },
+                    },
+                    1: {
+                        "value": 1,
+                        "next": {
+                            ResourceType.MONEY: -2000,
+                            ResourceType.FLOWERS: -200,
+                            ResourceType.SCRAPS: -1000,
+                            ResourceType.BRONZE_INGOTS: -5,
+                            ResourceType.SILVER_INGOTS: -3,
+                        },
+                    },
+                    2: {
+                        "value": 2,
+                        "next": {
+                            ResourceType.MONEY: -3000,
+                            ResourceType.FLOWERS: -300,
+                            ResourceType.SCRAPS: -1500,
+                            ResourceType.BRONZE_INGOTS: -8,
+                            ResourceType.SILVER_INGOTS: -5,
+                            ResourceType.GOLD_INGOTS: -1,
+                        },
+                    },
+                    3: {
+                        "value": 3,
+                        "next": {
+                            ResourceType.MONEY: -4000,
+                            ResourceType.FLOWERS: -400,
+                            ResourceType.SCRAPS: -2000,
+                            ResourceType.BRONZE_INGOTS: -10,
+                            ResourceType.SILVER_INGOTS: -8,
+                            ResourceType.GOLD_INGOTS: -5,
+                        },
+                    },
+                    4: {
+                        "value": 4,
+                        "next": {
+                            ResourceType.MONEY: -5000,
+                            ResourceType.FLOWERS: -500,
+                            ResourceType.SCRAPS: -3000,
+                            ResourceType.BRONZE_INGOTS: -15,
+                            ResourceType.SILVER_INGOTS: -10,
+                            ResourceType.GOLD_INGOTS: -10,
+                        },
+                    },
+                    5: {"value": 5, "next": None},
+                },
+            },
+            UpgradeSubtype.MAX_EMPTY_PASSES: {
+                "ordering": 2,
+                "title": "Пропуск ходов",
+                "upgrades": {
+                    0: {
+                        "value": 3,
+                        "next": {
+                            ResourceType.MONEY: -1000,
+                            ResourceType.RAW_BRONZE: -20,
+                            ResourceType.RAW_SILVER: -10,
+                            ResourceType.RAW_GOLD: -5,
+                        },
+                    },
+                    1: {
+                        "value": 5,
+                        "next": {
+                            ResourceType.MONEY: -1500,
+                            ResourceType.RAW_BRONZE: -40,
+                            ResourceType.RAW_SILVER: -20,
+                            ResourceType.RAW_GOLD: -10,
+                        },
+                    },
+                    2: {
+                        "value": 8,
+                        "next": {
+                            ResourceType.MONEY: -2000,
+                            ResourceType.RAW_BRONZE: -80,
+                            ResourceType.RAW_SILVER: -40,
+                            ResourceType.RAW_GOLD: -20,
+                            ResourceType.FLOWERS: -30,
+                        },
+                    },
+                    3: {
+                        "value": 12,
+                        "next": {
+                            ResourceType.MONEY: -4000,
+                            ResourceType.RAW_BRONZE: -150,
+                            ResourceType.RAW_SILVER: -100,
+                            ResourceType.RAW_GOLD: -40,
+                            ResourceType.FLOWERS: -50,
+                        },
+                    },
+                    4: {
+                        "value": 16,
+                        "next": {
+                            ResourceType.MONEY: -5000,
+                            ResourceType.RAW_BRONZE: -250,
+                            ResourceType.RAW_SILVER: -150,
+                            ResourceType.RAW_GOLD: -80,
+                            ResourceType.FLOWERS: -100,
+                        },
+                    },
+                    5: {
+                        "value": 20,
+                        "next": {
+                            ResourceType.MONEY: -6000,
+                            ResourceType.RAW_BRONZE: -350,
+                            ResourceType.RAW_SILVER: -250,
+                            ResourceType.RAW_GOLD: -150,
+                            ResourceType.FLOWERS: -150,
+                        },
+                    },
+                    6: {
+                        "value": 25,
+                        "next": {
+                            ResourceType.MONEY: -8000,
+                            ResourceType.RAW_BRONZE: -500,
+                            ResourceType.RAW_SILVER: -400,
+                            ResourceType.RAW_GOLD: -300,
+                            ResourceType.FLOWERS: -300,
+                        },
+                    },
+                    7: {
+                        "value": 30,
+                        "next": {
+                            ResourceType.MONEY: -10000,
+                            ResourceType.BRONZE_INGOTS: -10,
+                            ResourceType.SILVER_INGOTS: -8,
+                            ResourceType.GOLD_INGOTS: -5,
+                            ResourceType.FLOWERS: -400,
+                        },
+                    },
+                    8: {
+                        "value": 35,
+                        "next": {
+                            ResourceType.MONEY: -13000,
+                            ResourceType.BRONZE_INGOTS: -15,
+                            ResourceType.SILVER_INGOTS: -11,
+                            ResourceType.GOLD_INGOTS: -8,
+                            ResourceType.FLOWERS: -500,
+                        },
+                    },
+                    9: {
+                        "value": 40,
+                        "next": {
+                            ResourceType.MONEY: -20000,
+                            ResourceType.BRONZE_INGOTS: -30,
+                            ResourceType.SILVER_INGOTS: -20,
+                            ResourceType.GOLD_INGOTS: -15,
+                            ResourceType.FLOWERS: -600,
+                        },
+                    },
+                    10: {"value": 50, "next": None},
                 },
             },
         },
