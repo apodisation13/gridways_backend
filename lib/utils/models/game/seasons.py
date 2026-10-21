@@ -1,7 +1,8 @@
-from typing import Optional
+from typing import Any, Optional
 
 from lib.utils.models import BaseModel, TimestampMixin
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 
@@ -35,6 +36,11 @@ class Season(BaseModel, TimestampMixin):
         Integer,
         nullable=False,
         server_default="0",
+    )
+    data: Mapped[dict[str, Any]] = mapped_column(
+        JSONB,
+        server_default="{}",
+        nullable=True,
     )
 
 
@@ -84,6 +90,11 @@ class Level(BaseModel, TimestampMixin):
         Integer,
         ForeignKey("enemy_leaders.id", ondelete="RESTRICT"),
         nullable=False,
+    )
+    data: Mapped[dict[str, Any]] = mapped_column(
+        JSONB,
+        server_default="{}",
+        nullable=True,
     )
 
 

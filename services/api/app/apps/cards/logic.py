@@ -76,6 +76,9 @@ async def get_enemy_leaders(
                 enemy_passive_abilities.name AS passive_ability_name,
                 enemy_passive_abilities.description AS passive_ability_description,
 
+                deathwishes.name AS deathwish_name,
+                deathwishes.description AS deathwish_description,
+
                 enemy_leaders.data,
                 enemy_leaders.image_original AS image
             FROM
@@ -86,6 +89,8 @@ async def get_enemy_leaders(
                 enemy_leader_abilities ON enemy_leaders.ability_id = enemy_leader_abilities.id
             LEFT JOIN
                 enemy_passive_abilities ON enemy_leaders.passive_ability_id = enemy_passive_abilities.id
+            LEFT JOIN
+                deathwishes ON enemy_leaders.deathwish_id = deathwishes.id
         """,
     )
 
@@ -190,12 +195,14 @@ async def get_seasons(
                 seasons.description AS season_description,
                 seasons.x AS season_x,
                 seasons.y AS season_y,
+                seasons.data AS season_data,
                 levels.id AS level_id,
                 levels.name AS level_name,
                 levels.difficulty,
                 levels.starting_enemies_number,
                 levels.x,
                 levels.y,
+                levels.data AS level_data,
                 levels.enemy_leader_id AS enemy_leader_id,
                 level_enemies.enemy_id AS enemy_id
             FROM seasons
@@ -300,6 +307,7 @@ async def construct_seasons(
                 description=row["season_description"],
                 x=row["season_x"],
                 y=row["season_y"],
+                data=row["season_data"],
                 levels=[],
                 children=season_related_seasons[season_id],
             )
@@ -311,6 +319,7 @@ async def construct_seasons(
                 starting_enemies_number=row["starting_enemies_number"],
                 x=row["x"],
                 y=row["y"],
+                data=row["level_data"],
                 enemy_leader=row["enemy_leader_id"],
                 enemies=[],
                 children=level_related_levels[level_id],

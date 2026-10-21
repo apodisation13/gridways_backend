@@ -781,11 +781,34 @@ class UserProgressService:
         user_id: int,
         user_level_id: int,
     ) -> OpenRelatedLevelsResponse:
+        """
+        Логика прохожденя уровня
+        1) блокируем пользователя на случай одновременных запросов
+        2) текущему уровню ставим finished = true, если ранее там не было finished
+        3) если уровень ЕЩЕ НЕ БЫЛ завершен и при этом у него есть награды, начислим награды (то есть 1 раз по сути)
+        4) ищем, к какому сезону принадлежал пройденный уровень - season_id
+        5) хитрая логика - инзертим юзеру связи проденного уровня. Если что-то заинзертилось - значит связи есть,
+           и значит сезон еще не завершен. тогда дальше ничего не надо делать.
+        6) если ничего не заинзертилось - вот тут ничего не значит, связей ведь реально может и не быть. тогда надо
+           проверять, сколько всего уровней в сезоне и сколько пройдено у юзера, чтобы узнать о завершении сезона
+        7) если сезон завершен - то
+        7.1. ставим ему finished = true, если ранее там не было finished
+        7.2. если сезон ЕЩЕ НА БЫЛ завершен и при этом у него есть награды, начислим награды (то есть 1 раз по сути)
+        7.3. инзертим связи сезонов
+        7.4. инзертим открытые уровни этих сезонов
+        8. начисляем награды за уровень и за сезон тоже
+        """
         logger.info("Opening related_levels for user_level %s and user %s", user_level_id, user_id)
 
-        # Ставим текущему user_levels.finished = true, уровень пройден
+        # сюда будем складывать награды за завершенный уровень и за завершенный сезон
+        rewards = []
+
         async with self.db_pool.transaction() as connection:
-            season_id: int = await connection.fetchval(
+            # 1. Блокируем всё на время запроса
+            await connection.fetchval("SELECT id FROM users WHERE id = $1 FOR UPDATE", user_id)
+
+            # 2. Ставим текущему уровню finished = true, если ранее такого не было, достаем награды из уровня
+            completed_level_data: dict | None = await connection.fetchval(
                 """
                     UPDATE user_levels
                     SET
@@ -795,13 +818,35 @@ class UserProgressService:
                     WHERE user_levels.level_id = levels.id
                         AND user_levels.user_id = $1
                         AND user_levels.id = $2
-                    RETURNING levels.season_id;
+                        AND user_levels.finished IS FALSE
+                    RETURNING
+                        levels.data -> 'rewards';
                 """,
                 user_id,
                 user_level_id,
             )
 
-            # TODO: если тут что-то хотя бы открылось, значит сезон еще точно НЕ пройден
+            # 3. Если уровень ЕЩЕ НЕ БЫЛ завершен и при этом у него есть награды, начислим награды (то есть 1 раз)
+            if completed_level_data:
+                rewards.append(completed_level_data)
+
+            # 4. Ищем, к какому сезону принадлежал пройденный уровень
+            season_id: int = await connection.fetchval(
+                """
+                    SELECT
+                        levels.season_id
+                    FROM
+                        user_levels
+                    JOIN levels ON levels.id = user_levels.level_id
+                    WHERE
+                        user_levels.user_id = $1
+                        AND user_levels.id = $2
+                """,
+                user_id,
+                user_level_id,
+            )
+
+            # 5. Если тут что-то хотя бы открылось, значит сезон еще точно НЕ пройден
             # если не открылось - ничего не значит, надо проверять тогда все остальные уровни сезона
             # находим для этого уровня все его связанные related_level_id и инзертим их как user_levels
             level_related_levels = await connection.fetch(
@@ -825,7 +870,7 @@ class UserProgressService:
                 season_id,
             )
 
-            # вот здесь надо проверять количество пройденных уровней сезона и количество всего уровней
+            # 6. Вот здесь надо проверять количество пройденных уровней сезона и количество всего уровней
             if not level_related_levels:
                 all_levels_completed: bool = await connection.fetchval(
                     """
@@ -843,23 +888,35 @@ class UserProgressService:
                     season_id,
                 )
 
+                # 7. Весь сезон завершен - мы добавим связанные сезоны и все открытые по дефолту уровни
+                # этих связанных сезонов + начислим награды за пройденный сезон, если они есть
                 if all_levels_completed:
                     logger.info("All levels finished for user %s, season %s", user_id, season_id)
-                    # помечаем текущий сезон как завершённый
-                    await connection.execute(
+                    # 7.1. помечаем текущий сезон как завершённый
+                    completed_season_data: dict | None = await connection.fetchval(
                         """
                         UPDATE user_seasons
                         SET
                             finished = true,
                             updated_at = NOW()
+                        FROM seasons
                         WHERE
-                            user_id = $1
-                            AND season_id = $2;
+                            user_seasons.user_id = $1
+                            AND user_seasons.season_id = $2
+                            AND seasons.id = user_seasons.season_id
+                            AND user_seasons.finished = false
+                        RETURNING
+                            seasons.data -> 'rewards';
                         """,
                         user_id,
                         season_id,
                     )
-                    # инзертим юзеру сезоны, которые идут вслед за пройденным сезоном
+
+                    # 7.2. аналогично уровням - начисляем награду за сезон, и только 1 раз
+                    if completed_season_data:
+                        rewards.append(completed_season_data)
+
+                    # 7.3. инзертим юзеру сезоны, которые идут вслед за пройденным сезоном
                     await connection.execute(
                         """
                         INSERT INTO user_seasons (user_id, season_id, finished)
@@ -874,7 +931,8 @@ class UserProgressService:
                         user_id,
                         season_id,
                     )
-                    # инзертим теперь юзеру все unlocked=true уровни для каждого из открытых сезонов
+
+                    # 7.4. инзертим теперь юзеру все unlocked=true уровни для каждого из открытых сезонов
                     await connection.execute(
                         """
                         INSERT INTO user_levels (user_id, level_id, finished)
@@ -891,14 +949,27 @@ class UserProgressService:
                         season_id,
                     )
 
+            # 8. Начисляем награды, если они были
+            reward_updates: dict = await logic.grant_completion_rewards(
+                connection=connection,
+                user_id=user_id,
+                rewards=rewards,
+                scenario=f"Completion rewards: user_level {user_level_id}, season {season_id}",
+            )
+
             user_seasons = await logic.get_user_seasons(
                 connection=connection,
                 user_id=user_id,
             )
 
-        return OpenRelatedLevelsResponse(
-            seasons=user_seasons,
-        )
+            response = OpenRelatedLevelsResponse(
+                seasons=user_seasons,
+                resources=reward_updates.get("resources"),
+                cards=reward_updates.get("cards"),
+                leaders=reward_updates.get("leaders"),
+            )
+
+        return response
 
     async def craft_bonus_cards(
         self,
@@ -907,27 +978,7 @@ class UserProgressService:
     ) -> CardCraftBonusResponse:
         logger.info("Crafting bonus cards %s for user %s", cards_ids, user_id)
         async with self.db_pool.transaction() as connection:
-            await connection.fetch(
-                """
-                    WITH card_counts AS (
-                        SELECT card_id, COUNT(*) as occurrence_count
-                        FROM unnest($2::int[]) as card_id
-                        GROUP BY card_id
-                    )
-                    INSERT INTO user_cards
-                    (user_id, card_id, count)
-                    SELECT $1, card_counts.card_id, card_counts.occurrence_count
-                    FROM card_counts
-                    ON CONFLICT (user_id, card_id)
-                    DO UPDATE
-                        SET
-                            count = user_cards.count + EXCLUDED.count,
-                            updated_at = NOW()
-                    RETURNING user_cards.id;
-                """,
-                user_id,
-                cards_ids,
-            )
+            await logic.grant_bonus_cards(connection=connection, user_id=user_id, cards_ids=cards_ids)
 
             user_cards: dict[int, UserCard] = await logic.get_user_cards(
                 connection=connection,

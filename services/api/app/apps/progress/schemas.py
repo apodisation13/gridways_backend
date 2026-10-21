@@ -1,6 +1,6 @@
 from lib.utils.schemas import Base
-from lib.utils.schemas.game import CardActionSubtype, ResourceActionSubtype
-from pydantic import Field
+from lib.utils.schemas.game import CardActionSubtype, ResourceActionSubtype, ResourceType
+from pydantic import Field, NonNegativeInt, PositiveInt
 from services.api.app.apps.cards.schemas import Deck
 
 
@@ -117,8 +117,17 @@ class CardCraftMillResponse(Base):
     resources: UserResources
 
 
+class CompletionRewards(Base):
+    cards: list[PositiveInt] = Field(default_factory=list)
+    leaders: list[PositiveInt] = Field(default_factory=list)
+    resources: dict[ResourceType, NonNegativeInt] = Field(default_factory=dict)
+
+
 class OpenRelatedLevelsResponse(Base):
     seasons: dict[int, UserSeason]
+    resources: UserResources | None = None
+    cards: dict[int, UserCard] | None = None
+    leaders: dict[int, UserLeader] | None = None
 
 
 class CardCraftBonusRequest(Base):
