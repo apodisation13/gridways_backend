@@ -1,6 +1,7 @@
 import pytest
 
 from httpx import AsyncClient
+from lib.utils.schemas.game import ResourceType
 
 
 class TestOpenRelatedLevelsAPI:
@@ -178,12 +179,10 @@ class TestOpenRelatedLevelsAPI:
 
         assert len(user_levels) == 3
 
-        # он последним изменился, поэтому теперь он стал внизу)
-        assert user_levels[2]["finished"] is True
-
-        # ничего не изменилось!
+        # они здесь не изменились
+        assert user_levels[0]["finished"] is True
         assert user_levels[1]["finished"] is False
-        assert user_levels[0]["finished"] is False
+        assert user_levels[2]["finished"] is False
 
         # --------------- а теперь проходит еще 2й уровень ---------------
         response = await client.patch(
@@ -319,11 +318,17 @@ class TestOpenRelatedLevelsAPI:
         client: AsyncClient,
         user_login_fixture,
         # fixtures for test
+        game_constants_factory,
+        user_resource_factory,
+        user_upgrades_factory,
         user_level_factory,
         user_season_factory,
         season_factory,
         level_factory,
+        level_related_levels_factory,
         season_related_seasons_factory,
+        leader_factory,
+        card_factory,
     ):
         """
         Базовая фикстура добавила уже 4 разных уровня
@@ -333,6 +338,36 @@ class TestOpenRelatedLevelsAPI:
         """
         user_id = user_login_fixture["id"]
         access_token = user_login_fixture["token"]["access_token"]
+
+        await game_constants_factory()
+        await user_resource_factory(
+            id=user_id,
+            money=1000,
+            crops=0,
+            wood=500,
+        )
+        await user_upgrades_factory(id=user_id)
+
+        # эти нужны для того, чтобы в наградах добавиться пользователю
+        new_leader = await leader_factory(
+            faction_id=1,
+            ability_id=1,
+            unlocked=False,
+        )
+        new_card_1 = await card_factory(
+            faction_id=1,
+            ability_id=1,
+            color_id=1,
+            type_id=1,
+            unlocked=False,
+        )
+        new_card_2 = await card_factory(
+            faction_id=1,
+            ability_id=1,
+            color_id=1,
+            type_id=1,
+            unlocked=False,
+        )
 
         # у юзера открыт первый уровень первого сезона
         user_level = await user_level_factory(
@@ -377,18 +412,43 @@ class TestOpenRelatedLevelsAPI:
             name="Season 3",
             description="Season 3",
             unlocked=False,
+            data={
+                "rewards": {
+                    "resources": {
+                        ResourceType.MONEY: 2000,
+                        ResourceType.WOOD: 1000,
+                        ResourceType.CROPS: 1000,
+                    },
+                    "cards": [new_card_1.id, new_card_2.id],
+                    "leaders": [new_leader.id],
+                },
+            },
         )
         # два уровня для сезона 3 - только один открыт
-        await level_factory(
+        level_of_season_3_first = await level_factory(
             season_id=season_3.id,
             enemy_leader_id=1,
             unlocked=True,
+            data={
+                "rewards": {
+                    "resources": {
+                        ResourceType.MONEY: 1111,
+                    },
+                    "cards": [new_card_1.id],
+                },
+            },
         )
-        await level_factory(
+        level_of_season_3_second = await level_factory(
             season_id=season_3.id,
             enemy_leader_id=1,
             unlocked=False,
         )
+        # и есть связь между уровнями нового третьего сезона
+        await level_related_levels_factory(
+            level_id=level_of_season_3_first.id,
+            related_level_id=level_of_season_3_second.id,
+        )
+
         # связь сезона 1 с новым сезоном 3
         await season_related_seasons_factory(
             season_id=1,
@@ -450,7 +510,7 @@ class TestOpenRelatedLevelsAPI:
         )
         assert finished_levels == 4
 
-        # --------------- и наконец проходим уровень 5 из сезона 3 ---------------
+        # --------------- проходим уровень 5 из сезона 3 ---------------
         # только надо найти его id
         user_level_id: int = await db_connection.fetchval(
             """
@@ -467,19 +527,22 @@ class TestOpenRelatedLevelsAPI:
 
         assert response.status_code == 200
         response_json = response.json()
-        print(response_json)
 
-        # у 3 сезона нет связей, и еще один уровень висит у него без связей
+        assert response_json["resources"] is not None
+        assert response_json["cards"] is not None
+        assert response_json["leaders"] is None
+
+        # у 3 сезона нет связей
         user_seasons: list[dict] = await db_connection.fetch("""SELECT * FROM user_seasons ORDER BY updated_at DESC""")
         assert len(user_seasons) == 3
 
-        # в сезоне 3 по тесту есть уровень, но он не связан никак с другим, поэтому без изменений
+        # в сезоне 3 по тесту есть 2 уровеня, и у них есть связь, тут открылся соответственно еще один уровень
         user_levels: list[dict] = await db_connection.fetch("""SELECT * FROM user_levels ORDER BY updated_at DESC""")
-        assert len(user_levels) == 5
+        assert len(user_levels) == 6
 
         # но уровень-то прошли, и ему поставим finished = true
         assert user_levels[0]["finished"] is True
-        assert user_levels[0]["level_id"] == 5
+        assert user_levels[0]["level_id"] == level_of_season_3_first.id
         assert user_levels[0]["id"] == user_level_id
 
         # ИТОГО: 5 пройденных уровня (3 из сезона 1, 1 из сезона 2, 1 из сезона 3)
@@ -487,3 +550,83 @@ class TestOpenRelatedLevelsAPI:
             """SELECT COUNT(*) FROM user_levels WHERE finished IS TRUE""",
         )
         assert finished_levels == 5
+
+        user_cards = await db_connection.fetch("""SELECT * FROM user_cards""")
+        assert len(user_cards) == 1  # добавилась в результате награды за уровень 1 из сезона 3
+        assert user_cards[0]["card_id"] == new_card_1.id
+        user_leaders = await db_connection.fetch("""SELECT * FROM user_leaders""")
+        assert len(user_leaders) == 0
+
+        user_resources = await db_connection.fetchrow("""SELECT * FROM user_resources WHERE id = $1""", user_id)
+        assert user_resources["money"] == 1000 + 1111  # 1000 была, 1111 добавилось за уровень 1 из сезона 3
+        assert user_resources["crops"] == 0
+        assert user_resources["wood"] == 500
+
+        # --------------- и наконец проходим уровень 6 из сезона 3, он весь сезон закомплитит ---------------
+        # только надо найти его id, он там один непройденный
+        user_level_id: int = await db_connection.fetchval(
+            """
+                SELECT user_levels.id FROM user_levels
+                JOIN levels ON user_levels.level_id = levels.id
+                WHERE levels.season_id = 3 AND user_levels.finished IS FALSE
+            """,
+        )
+
+        response = await client.patch(
+            self.endpoint.format(user_id=user_id, user_level_id=user_level_id),
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+        assert response.status_code == 200
+        response_json = response.json()
+
+        assert response_json["resources"] is not None
+        assert response_json["cards"] is not None
+        assert response_json["leaders"] is not None
+
+        # все 6 уровней пройдены
+        user_levels: list[dict] = await db_connection.fetch(
+            """SELECT * FROM user_levels WHERE finished IS TRUE""",
+        )
+        assert len(user_levels) == 6
+
+        # все 3 сезона пройдены
+        user_seasons: list[dict] = await db_connection.fetch(
+            """SELECT * FROM user_seasons WHERE finished IS TRUE""",
+        )
+        assert len(user_seasons) == 3
+
+        user_cards = await db_connection.fetch("""SELECT * FROM user_cards ORDER BY card_id DESC""")
+        assert len(user_cards) == 2  # добавилась в результате награды за весь сезон 3
+        assert user_cards[0]["card_id"] == new_card_2.id
+        assert user_cards[0]["count"] == 1
+        assert user_cards[1]["card_id"] == new_card_1.id
+        assert user_cards[1]["count"] == 2
+
+        user_leaders = await db_connection.fetch("""SELECT * FROM user_leaders""")
+        assert len(user_leaders) == 1  # добавился в результате награды за сезон 3!
+        assert user_leaders[0]["leader_id"] == new_leader.id
+
+        user_resources = await db_connection.fetchrow("""SELECT * FROM user_resources WHERE id = $1""", user_id)
+        assert user_resources["money"] == 1000 + 1111 + 2000
+        assert user_resources["crops"] == 0 + 1000
+        assert user_resources["wood"] == 500 + 1000
+
+        # --------------- если даже пройти сезон заново, никаких наград 2й раз не будет ---------------
+        response = await client.patch(
+            self.endpoint.format(user_id=user_id, user_level_id=user_level_id),
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+        assert response.status_code == 200
+        response_json = response.json()
+
+        assert response_json["resources"] is None
+        assert response_json["cards"] is None
+        assert response_json["leaders"] is None
+
+        # ничего не поменялось по балансу ресурсов
+        user_resources = await db_connection.fetchrow("""SELECT * FROM user_resources WHERE id = $1""", user_id)
+        assert user_resources["money"] == 1000 + 1111 + 2000
+        assert user_resources["crops"] == 0 + 1000
+        assert user_resources["wood"] == 500 + 1000

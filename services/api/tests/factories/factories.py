@@ -225,6 +225,7 @@ class SeasonFactory(BaseModelFactory):
     unlocked = False
     x = 0
     y = 0
+    data = {}
 
 
 class LevelFactory(BaseModelFactory):
@@ -237,6 +238,7 @@ class LevelFactory(BaseModelFactory):
     unlocked = False
     x = 0
     y = 0
+    data = {}
     season_id = factory.SubFactory(SeasonFactory)
     enemy_leader_id = factory.SubFactory(EnemyLeaderFactory)
 

@@ -6,6 +6,7 @@ from lib.utils.schemas.game import ResourceType, UpgradeSubtype, UpgradeType
 from services.api.app.apps.cards.schemas import Deck
 from services.api.app.apps.game_const import logic as game_const_logic
 from services.api.app.apps.progress.schemas import (
+    CompletionRewards,
     CreateDeckRequest,
     UserCard,
     UserDeck,
@@ -574,3 +575,90 @@ async def open_default_content(
     await connection.execute("""INSERT INTO user_resources (id) VALUES ($1)""", user_id)
 
     logger.info("Finished creating user database for user %s", user_id)
+
+
+async def grant_bonus_cards(
+    connection: asyncpg.Connection,
+    user_id: int,
+    cards_ids: list[int],
+) -> None:
+    await connection.execute(
+        """
+            WITH counts AS (
+                SELECT card_id, COUNT(*) AS count
+                FROM unnest($2::int[]) AS card_id
+                GROUP BY card_id
+            )
+            INSERT INTO user_cards (user_id, card_id, count)
+            SELECT $1, card_id, count FROM counts ORDER BY card_id
+            ON CONFLICT (user_id, card_id)
+            DO UPDATE SET count = user_cards.count + EXCLUDED.count, updated_at = NOW()
+        """,
+        user_id,
+        cards_ids,
+    )
+
+
+async def grant_bonus_leaders(
+    connection: asyncpg.Connection,
+    user_id: int,
+    leaders_ids: list[int],
+) -> None:
+    await connection.execute(
+        """
+            WITH counts AS (
+                SELECT leader_id, COUNT(*) AS count
+                FROM unnest($2::int[]) AS leader_id
+                GROUP BY leader_id
+            )
+            INSERT INTO user_leaders (user_id, leader_id, count)
+            SELECT $1, leader_id, count FROM counts ORDER BY leader_id
+            ON CONFLICT (user_id, leader_id)
+            DO UPDATE SET count = user_leaders.count + EXCLUDED.count, updated_at = NOW()
+        """,
+        user_id,
+        leaders_ids,
+    )
+
+
+async def grant_completion_rewards(
+    connection: asyncpg.Connection,
+    user_id: int,
+    rewards: list[dict],
+    scenario: str,
+) -> dict:
+    if not rewards:
+        return {}
+
+    logger.info("Completing rewards for user %s, rewards %s, scenario %s", user_id, rewards, scenario)
+    cards_ids = []
+    leaders_ids = []
+    resources = {}
+
+    for data in rewards:
+        reward = CompletionRewards.model_validate(data)
+        cards_ids.extend(reward.cards)
+        leaders_ids.extend(reward.leaders)
+        for resource, amount in reward.resources.items():
+            if amount:
+                resources[resource] = resources.get(resource, 0) + amount
+
+    updates = {}
+
+    if resources:
+        updates["resources"] = await change_resources(
+            connection=connection,
+            user_id=user_id,
+            resources_to_change=resources,
+            scenario=scenario,
+        )
+
+    if cards_ids:
+        await grant_bonus_cards(connection=connection, user_id=user_id, cards_ids=cards_ids)
+        updates["cards"] = await get_user_cards(connection=connection, user_id=user_id)
+
+    if leaders_ids:
+        await grant_bonus_leaders(connection=connection, user_id=user_id, leaders_ids=leaders_ids)
+        updates["leaders"] = await get_user_leaders(connection=connection, user_id=user_id)
+
+    return updates
