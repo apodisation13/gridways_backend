@@ -121,6 +121,7 @@ class EnemyLeader(Base):
     faction: str
     ability: EnemyLeaderAbility
     passive_ability: EnemyPassiveAbility
+    deathwish: Deathwish
     data: dict
     image: str
 
@@ -140,6 +141,10 @@ class EnemyLeader(Base):
             passive_ability=EnemyPassiveAbility(
                 name=row["passive_ability_name"],
                 description=row["passive_ability_description"],
+            ),
+            deathwish=Deathwish(
+                name=row["deathwish_name"],
+                description=row["deathwish_description"],
             ),
             data=row["data"],
             image=build_image_url(base_url, row["image"]),
@@ -197,6 +202,7 @@ class Level(Base):
     difficulty: LevelDifficulty
     x: int
     y: int
+    data: dict | None
     enemy_leader: int
     enemies: list[int]
     children: list[LevelRelatedLevel]
@@ -214,6 +220,7 @@ class Season(Base):
     description: str
     x: int
     y: int
+    data: dict | None
     levels: list[Level]
     children: list[SeasonRelatedSeason]
 

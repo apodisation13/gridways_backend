@@ -163,6 +163,11 @@ class EnemyLeader(BaseModel, TimestampMixin):
         ForeignKey("enemy_passive_abilities.id", ondelete="RESTRICT"),
         nullable=True,
     )
+    deathwish_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("deathwishes.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
     data: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         server_default="{}",

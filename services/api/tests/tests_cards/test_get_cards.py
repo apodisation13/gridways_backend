@@ -206,6 +206,10 @@ class TestGetCardsAPI:
                         "name": None,
                         "description": None,
                     },
+                    "deathwish": {
+                        "name": None,
+                        "description": None,
+                    },
                     "data": {
                         "hp": 10,
                         "passive": {"value": 10},
