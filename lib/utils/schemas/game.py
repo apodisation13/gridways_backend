@@ -27,9 +27,30 @@ class ResourceType(StrEnum):
     KEYS = "keys"
     MONEY = "money"
     FLOWERS = "flowers"
+    # inventory items
     FIRST_AID_KITS = "first_aid_kits"
     SHIELDS = "shields"
     IMMUNE_MAGICS = "immune_magics"
+    DRAW_CARDS = "draw_cards"
+    MEGA_BOMBS = "mega_bombs"
+    RANDOM_BOMBS = "random_bombs"
+    CLEARS = "clears"
+    PURIFIES = "purifies"
+    RANDOM_EFFECTS = "random_effects"
+
+    @classmethod
+    def inventory_resources(cls) -> set:
+        return {
+            cls.FIRST_AID_KITS,
+            cls.SHIELDS,
+            cls.IMMUNE_MAGICS,
+            cls.DRAW_CARDS,
+            cls.MEGA_BOMBS,
+            cls.RANDOM_BOMBS,
+            cls.CLEARS,
+            cls.PURIFIES,
+            cls.RANDOM_EFFECTS,
+        }
 
 
 class ResourceActionSubtype(StrEnum):
@@ -42,9 +63,7 @@ class ResourceActionSubtype(StrEnum):
     START_ARENA_LEVEL = "start_arena_level"
     WIN_ARENA_LEVEL = "win_arena_level"
     UPGRADE_IN_ARENA = "upgrade_in_arena"
-    USE_FIRST_AID_KIT = "use_first_aid_kit"
-    USE_SHIELDS = "use_shields"
-    USE_IMMUNE_MAGICS = "use_immune_magics"
+    USE_INVENTORY_ITEM = "use_inventory_item"
 
     @classmethod
     def to_increase_resources(cls) -> set:
@@ -62,9 +81,7 @@ class ResourceActionSubtype(StrEnum):
             cls.START_ARENA_LEVEL,
             cls.ENTER_ARENA,
             cls.UPGRADE_IN_ARENA,
-            cls.USE_SHIELDS,
-            cls.USE_FIRST_AID_KIT,
-            cls.USE_IMMUNE_MAGICS,
+            cls.USE_INVENTORY_ITEM,
         }
 
 
@@ -155,6 +172,7 @@ DEFAULT_RESOURCES_TRANSITIONS = {
         ],
         "step": 1,
         "index": 7,
+        "open": True,
     },
     ResourceType.BIG_KEGS: {
         ResourceTransitionActionType.BUY: [{ResourceType.MONEY: -20000}],
@@ -166,6 +184,7 @@ DEFAULT_RESOURCES_TRANSITIONS = {
         ],
         "step": 1,
         "index": 8,
+        "open": True,
     },
     ResourceType.SCRAPS: {
         ResourceTransitionActionType.BUY: [{ResourceType.MONEY: -1000}],
@@ -182,6 +201,7 @@ DEFAULT_RESOURCES_TRANSITIONS = {
         ],
         "step": 1,
         "index": 10,
+        "open": True,
     },
     ResourceType.FLOWERS: {
         ResourceTransitionActionType.BUY: [{ResourceType.MONEY: -300}],
@@ -189,6 +209,7 @@ DEFAULT_RESOURCES_TRANSITIONS = {
         "step": 10,
         "index": 11,
     },
+    # inventory items
     ResourceType.FIRST_AID_KITS: {
         ResourceTransitionActionType.CRAFT: [
             {ResourceType.FLOWERS: -100, ResourceType.SCRAPS: -500, ResourceType.MONEY: -1000},
@@ -198,6 +219,7 @@ DEFAULT_RESOURCES_TRANSITIONS = {
         ],
         "step": 1,
         "index": 12,
+        "inventory": True,
     },
     ResourceType.SHIELDS: {
         ResourceTransitionActionType.CRAFT: [
@@ -217,6 +239,7 @@ DEFAULT_RESOURCES_TRANSITIONS = {
         ResourceTransitionActionType.SELL: [{ResourceType.MONEY: 500}],
         "step": 1,
         "index": 13,
+        "inventory": True,
     },
     ResourceType.IMMUNE_MAGICS: {
         ResourceTransitionActionType.CRAFT: [
@@ -232,6 +255,102 @@ DEFAULT_RESOURCES_TRANSITIONS = {
         ],
         "step": 1,
         "index": 14,
+"inventory": True,
+    },
+    ResourceType.DRAW_CARDS: {
+        ResourceTransitionActionType.CRAFT: [
+            {
+                ResourceType.MONEY: -2000,
+                ResourceType.FLOWERS: -100,
+                ResourceType.SCRAPS: -1000,
+                ResourceType.SILK: -5,
+            },
+        ],
+        ResourceTransitionActionType.SELL: [
+            {ResourceType.MONEY: 1000},
+        ],
+        "step": 1,
+        "index": 15,
+"inventory": True,
+    },
+    ResourceType.MEGA_BOMBS: {
+        ResourceTransitionActionType.CRAFT: [
+            {
+                ResourceType.MONEY: -5000,
+                ResourceType.FLOWERS: -200,
+                ResourceType.SCRAPS: -2000,
+                ResourceType.SILK: -20,
+            },
+            {
+                ResourceType.RARE_GEM: -1,
+            },
+        ],
+        ResourceTransitionActionType.SELL: [
+            {ResourceType.MONEY: 5000},
+        ],
+        "step": 1,
+        "index": 16,
+"inventory": True,
+    },
+    ResourceType.RANDOM_BOMBS: {
+        ResourceTransitionActionType.CRAFT: [
+            {
+                ResourceType.MONEY: -2000,
+                ResourceType.CROPS: -1000,
+                ResourceType.WOOD: -1000,
+            },
+        ],
+        ResourceTransitionActionType.SELL: [
+            {ResourceType.MONEY: 1000},
+        ],
+        "step": 1,
+        "index": 17,
+"inventory": True,
+    },
+    ResourceType.CLEARS: {
+        ResourceTransitionActionType.CRAFT: [
+            {
+                ResourceType.MONEY: -2000,
+                ResourceType.FLOWERS: -200,
+            },
+        ],
+        ResourceTransitionActionType.SELL: [
+            {ResourceType.MONEY: 1000},
+        ],
+        "step": 1,
+        "index": 18,
+"inventory": True,
+    },
+    ResourceType.PURIFIES: {
+        ResourceTransitionActionType.CRAFT: [
+            {
+                ResourceType.MONEY: -2000,
+                ResourceType.FLOWERS: -100,
+                ResourceType.SCRAPS: -1000,
+            },
+        ],
+        ResourceTransitionActionType.SELL: [
+            {ResourceType.MONEY: 1000},
+        ],
+        "step": 1,
+        "index": 19,
+"inventory": True,
+    },
+    ResourceType.RANDOM_EFFECTS: {
+        ResourceTransitionActionType.CRAFT: [
+            {
+                ResourceType.MONEY: -5000,
+                ResourceType.BRONZE_INGOTS: -5,
+                ResourceType.SILVER_INGOTS: -4,
+                ResourceType.GOLD_INGOTS: -3,
+            },
+        ],
+        ResourceTransitionActionType.SELL: [
+            {ResourceType.MONEY: 2000},
+        ],
+        "step": 1,
+        "index": 20,
+"inventory": True,
     },
 }
 
@@ -637,28 +756,29 @@ class UpgradeType(StrEnumChoices):
     RESOURCES = "resources"
     SETTINGS = "settings"
     GAME = "game"
+    INVENTORY = "inventory"
 
 
 class UpgradeSubtype(StrEnumChoices):
+    # game
     MAX_CARDS_IN_DECK = "max_cards_in_deck"
     HAND_SIZE = "hand_size"
     MAX_ARMOR = "max_armor"
     MAX_HP = "max_hp"
     MAX_IMMUNE_TURNS = "max_immune_turns"
     MAX_DECKS = "max_decks"
-    FIRST_AID_KIT_HEAL = "first_aid_kit_heal"
-    SHIELD_ARMOR = "shield_armor"
-    IMMUNE_MAGICS_TURNS = "immune_magics_turns"
     REDRAWS_INITIAL = "redraws_initial"
     REDRAWS_DRAWN = "redraws_drawn"
     CARDS_DRAWN = "cards_drawn"
     FULL_HAND_REDRAW = "full_hand_redraw"
     MAX_EMPTY_PASSES = "max_empty_passes"
 
+    # settings
     AVATAR = "avatar"
     THEME = "theme"
     FIELD = "field"
 
+    # resources
     MONEY = "money"
     SCRAPS = "scraps"
     KEGS = "kegs"
@@ -668,10 +788,29 @@ class UpgradeSubtype(StrEnumChoices):
     INGOTS = "ingots"
     RAW = "raw"
     FLOWERS = "flowers"
+
+    # inventory
+    INVENTORY_SLOTS = "inventory_slots"
+
+    FIRST_AID_KIT_HEAL = "first_aid_kit_heal"
+    SHIELD_ARMOR = "shield_armor"
+    IMMUNE_MAGICS_TURNS = "immune_magics_turns"
+    INVENTORY_CARDS_DRAWN = "inventory_cards_drawn"
+    PURIFIES_TARGETS = "purifies_targets"
+    RANDOM_EFFECTS_TURNS = "random_effects_turns"
+    RANDOM_EFFECTS_VALUE = "random_effects_value"
+
     FIRST_AID_KITS = "first_aid_kits"
     SHIELDS = "shields"
     IMMUNE_MAGICS = "immune_magics"
+    DRAW_CARDS = "draw_cards"
+    MEGA_BOMBS = "mega_bombs"
+    RANDOM_BOMBS = "random_bombs"
+    CLEARS = "clears"
+    PURIFIES = "purifies"
+    RANDOM_EFFECTS = "random_effects"
 
+    # arena
     ARENA_DRAW_EXACT_CARD = "arena_draw_exact_card"
     ARENA_REDRAW_CARD = "arena_redraw_card"
     ARENA_RESURRECT = "arena_resurrect"
@@ -688,13 +827,10 @@ DEFAULT_USER_UPGRADES = {
         UpgradeSubtype.MAX_ARMOR: 0,
         UpgradeSubtype.MAX_HP: 0,
         UpgradeSubtype.MAX_DECKS: 0,
-        UpgradeSubtype.FIRST_AID_KIT_HEAL: 0,
-        UpgradeSubtype.SHIELD_ARMOR: 0,
         UpgradeSubtype.REDRAWS_INITIAL: 0,
         UpgradeSubtype.REDRAWS_DRAWN: 0,
         UpgradeSubtype.CARDS_DRAWN: 0,
         UpgradeSubtype.MAX_IMMUNE_TURNS: 0,
-        UpgradeSubtype.IMMUNE_MAGICS_TURNS: 0,
         UpgradeSubtype.FULL_HAND_REDRAW: 0,
         UpgradeSubtype.MAX_EMPTY_PASSES: 0,
     },
@@ -713,9 +849,25 @@ DEFAULT_USER_UPGRADES = {
         UpgradeSubtype.SILK: 0,
         UpgradeSubtype.KEGS: 0,  # KEGS, BIG_KEGS, CHESTS
         UpgradeSubtype.FLOWERS: 0,
+    },
+    UpgradeType.INVENTORY: {
+        UpgradeSubtype.INVENTORY_SLOTS: 0,
         UpgradeSubtype.FIRST_AID_KITS: 0,
         UpgradeSubtype.SHIELDS: 0,
         UpgradeSubtype.IMMUNE_MAGICS: 0,
+        UpgradeSubtype.DRAW_CARDS: 0,
+        UpgradeSubtype.MEGA_BOMBS: 0,
+        UpgradeSubtype.RANDOM_BOMBS: 0,
+        UpgradeSubtype.CLEARS: 0,
+        UpgradeSubtype.PURIFIES: 0,
+        UpgradeSubtype.RANDOM_EFFECTS: 0,
+        UpgradeSubtype.FIRST_AID_KIT_HEAL: 0,
+        UpgradeSubtype.SHIELD_ARMOR: 0,
+        UpgradeSubtype.IMMUNE_MAGICS_TURNS: 0,
+        UpgradeSubtype.INVENTORY_CARDS_DRAWN: 0,
+        UpgradeSubtype.PURIFIES_TARGETS: 0,
+        UpgradeSubtype.RANDOM_EFFECTS_TURNS: 0,
+        UpgradeSubtype.RANDOM_EFFECTS_VALUE: 0,
     },
 }
 
@@ -1079,129 +1231,6 @@ DEFAULT_UPGRADES: dict[UpgradeType, dict] = {
                     5: {"value": 10, "next": None},
                 },
             },
-            UpgradeSubtype.FIRST_AID_KIT_HEAL: {
-                "ordering": 5,
-                "title": "Лечение от аптечки (используется в игре)",
-                "upgrades": {
-                    0: {
-                        "value": 15,
-                        "next": {
-                            ResourceType.MONEY: -2000,
-                            ResourceType.FLOWERS: -100,
-                        },
-                    },
-                    1: {
-                        "value": 25,
-                        "next": {
-                            ResourceType.MONEY: -3000,
-                            ResourceType.FLOWERS: -150,
-                        },
-                    },
-                    2: {
-                        "value": 40,
-                        "next": {
-                            ResourceType.MONEY: -5000,
-                            ResourceType.FLOWERS: -200,
-                            ResourceType.SCRAPS: -2000,
-                        },
-                    },
-                    3: {
-                        "value": 50,
-                        "next": {
-                            ResourceType.MONEY: -7500,
-                            ResourceType.FLOWERS: -250,
-                            ResourceType.SCRAPS: -3000,
-                        },
-                    },
-                    4: {
-                        "value": 65,
-                        "next": {
-                            ResourceType.MONEY: -10000,
-                            ResourceType.FLOWERS: -300,
-                            ResourceType.SCRAPS: -4000,
-                        },
-                    },
-                    5: {
-                        "value": 80,
-                        "next": {
-                            ResourceType.MONEY: -15000,
-                            ResourceType.FLOWERS: -400,
-                            ResourceType.SCRAPS: -5000,
-                            ResourceType.SILK: -100,
-                        },
-                    },
-                    6: {"value": 100, "next": None},
-                },
-            },
-            UpgradeSubtype.SHIELD_ARMOR: {
-                "ordering": 6,
-                "title": "Броня от магического щитка (используется в игре)",
-                "upgrades": {
-                    0: {
-                        "value": 2,
-                        "next": {
-                            ResourceType.MONEY: -1000,
-                            ResourceType.RAW_BRONZE: -100,
-                            ResourceType.BRONZE_INGOTS: -5,
-                        },
-                    },
-                    1: {
-                        "value": 3,
-                        "next": {
-                            ResourceType.MONEY: -2000,
-                            ResourceType.RAW_BRONZE: -150,
-                            ResourceType.BRONZE_INGOTS: -7,
-                            ResourceType.SILVER_INGOTS: -5,
-                        },
-                    },
-                    2: {
-                        "value": 4,
-                        "next": {
-                            ResourceType.MONEY: -3000,
-                            ResourceType.RAW_BRONZE: -200,
-                            ResourceType.RAW_SILVER: -100,
-                            ResourceType.BRONZE_INGOTS: -10,
-                            ResourceType.SILVER_INGOTS: -7,
-                        },
-                    },
-                    3: {
-                        "value": 5,
-                        "next": {
-                            ResourceType.MONEY: -4000,
-                            ResourceType.RAW_BRONZE: -250,
-                            ResourceType.RAW_SILVER: -100,
-                            ResourceType.RAW_GOLD: -30,
-                            ResourceType.BRONZE_INGOTS: -10,
-                            ResourceType.SILVER_INGOTS: -5,
-                        },
-                    },
-                    4: {
-                        "value": 6,
-                        "next": {
-                            ResourceType.MONEY: -5000,
-                            ResourceType.RAW_BRONZE: -300,
-                            ResourceType.RAW_SILVER: -100,
-                            ResourceType.RAW_GOLD: -50,
-                            ResourceType.BRONZE_INGOTS: -10,
-                            ResourceType.SILVER_INGOTS: -7,
-                            ResourceType.GOLD_INGOTS: -5,
-                        },
-                    },
-                    5: {
-                        "value": 8,
-                        "next": {
-                            ResourceType.MONEY: -7500,
-                            ResourceType.RAW_BRONZE: -500,
-                            ResourceType.RAW_SILVER: -300,
-                            ResourceType.RAW_GOLD: -200,
-                            ResourceType.BRONZE_INGOTS: -20,
-                            ResourceType.SILVER_INGOTS: -15,
-                            ResourceType.GOLD_INGOTS: -10,
-                        },
-                    },
-                    6: {"value": 10, "next": None},
-                },
-            },
             UpgradeSubtype.REDRAWS_INITIAL: {
                 "ordering": 7,
                 "title": "Замена карт в начале игры",
@@ -1333,53 +1362,6 @@ DEFAULT_UPGRADES: dict[UpgradeType, dict] = {
                         },
                     },
                     5: {"value": 10, "next": None},
-                },
-            },
-            UpgradeSubtype.IMMUNE_MAGICS_TURNS: {
-                "ordering": 10,
-                "title": "Ходов неуязвимости (используется в игре)",
-                "upgrades": {
-                    0: {
-                        "value": 1,
-                        "next": {
-                            ResourceType.MONEY: -2000,
-                            ResourceType.FLOWERS: -100,
-                            ResourceType.SCRAPS: -1000,
-                            ResourceType.RAW_SILVER: -100,
-                            ResourceType.RAW_GOLD: -50,
-                        },
-                    },
-                    1: {
-                        "value": 2,
-                        "next": {
-                            ResourceType.MONEY: -4000,
-                            ResourceType.FLOWERS: -200,
-                            ResourceType.SCRAPS: -2000,
-                            ResourceType.RAW_SILVER: -200,
-                            ResourceType.RAW_GOLD: -100,
-                        },
-                    },
-                    2: {
-                        "value": 3,
-                        "next": {
-                            ResourceType.MONEY: -7000,
-                            ResourceType.FLOWERS: -300,
-                            ResourceType.SCRAPS: -4000,
-                            ResourceType.RAW_SILVER: -400,
-                            ResourceType.RAW_GOLD: -200,
-                        },
-                    },
-                    3: {
-                        "value": 4,
-                        "next": {
-                            ResourceType.MONEY: -10000,
-                            ResourceType.FLOWERS: -500,
-                            ResourceType.SCRAPS: -5000,
-                            ResourceType.RAW_SILVER: -500,
-                            ResourceType.RAW_GOLD: -400,
-                        },
-                    },
-                    4: {"value": 5, "next": None},
                 },
             },
             UpgradeSubtype.FULL_HAND_REDRAW: {
@@ -2352,9 +2334,75 @@ DEFAULT_UPGRADES: dict[UpgradeType, dict] = {
                     8: {"value": 1000, "next": None},
                 },
             },
+        },
+    },
+    UpgradeType.INVENTORY: {
+        "ordering": 4,
+        "title": "Инвентарь",
+        "upgrades": {
+            UpgradeSubtype.INVENTORY_SLOTS: {
+                "ordering": 0,
+                "title": "Слотов в инвентаре",
+                "upgrades": {
+                    0: {
+                        "value": 1,
+                        "next": {
+                            ResourceType.MONEY: -1000,
+                            ResourceType.RAW_BRONZE: -30,
+                            ResourceType.RAW_SILVER: -20,
+                        },
+                    },
+                    1: {
+                        "value": 2,
+                        "next": {
+                            ResourceType.MONEY: -2000,
+                            ResourceType.RAW_BRONZE: -50,
+                            ResourceType.RAW_SILVER: -35,
+                            ResourceType.RAW_GOLD: -10,
+                        },
+                    },
+                    2: {
+                        "value": 3,
+                        "next": {
+                            ResourceType.MONEY: -3000,
+                            ResourceType.RAW_BRONZE: -100,
+                            ResourceType.RAW_SILVER: -50,
+                            ResourceType.RAW_GOLD: -25,
+                        },
+                    },
+                    3: {
+                        "value": 4,
+                        "next": {
+                            ResourceType.MONEY: -5000,
+                            ResourceType.BRONZE_INGOTS: -15,
+                            ResourceType.SILVER_INGOTS: -10,
+                            ResourceType.GOLD_INGOTS: -5,
+                        },
+                    },
+                    4: {
+                        "value": 5,
+                        "next": {
+                            ResourceType.MONEY: -7500,
+                            ResourceType.BRONZE_INGOTS: -25,
+                            ResourceType.SILVER_INGOTS: -15,
+                            ResourceType.GOLD_INGOTS: -10,
+                        },
+                    },
+                    5: {
+                        "value": 6,
+                        "next": {
+                            ResourceType.MONEY: -10000,
+                            ResourceType.BRONZE_INGOTS: -50,
+                            ResourceType.SILVER_INGOTS: -25,
+                            ResourceType.GOLD_INGOTS: -15,
+                        },
+                    },
+                    6: {"value": 7, "next": None},
+                },
+            },
             UpgradeSubtype.FIRST_AID_KITS: {
-                "ordering": 3,
-                "title": "Запас аптечек (для использования в игре)",
+                "ordering": 1,
+                "title": "Запас аптечек",
                 "upgrades": {
                     0: {
                         "value": 0,
@@ -2412,8 +2460,8 @@ DEFAULT_UPGRADES: dict[UpgradeType, dict] = {
                 },
             },
             UpgradeSubtype.SHIELDS: {
-                "ordering": 1,
-                "title": "Запас щитов (для использования в игре)",
+                "ordering": 2,
+                "title": "Запас щитов",
                 "upgrades": {
                     0: {
                         "value": 0,
@@ -2459,7 +2507,7 @@ DEFAULT_UPGRADES: dict[UpgradeType, dict] = {
                 },
             },
             UpgradeSubtype.IMMUNE_MAGICS: {
-                "ordering": 11,
+                "ordering": 3,
                 "title": "Запас магической неуязвимости",
                 "upgrades": {
                     0: {
@@ -2517,6 +2565,570 @@ DEFAULT_UPGRADES: dict[UpgradeType, dict] = {
                         },
                     },
                     6: {"value": 10, "next": None},
+                },
+            },
+            UpgradeSubtype.DRAW_CARDS: {
+                "ordering": 4,
+                "title": "Запас магической карты",
+                "upgrades": {
+                    0: {
+                        "value": 0,
+                        "next": {
+                            ResourceType.MONEY: -1000,
+                            ResourceType.SCRAPS: -500,
+                            ResourceType.FLOWERS: -50,
+                        },
+                    },
+                    1: {
+                        "value": 1,
+                        "next": {
+                            ResourceType.MONEY: -2000,
+                            ResourceType.SCRAPS: -750,
+                            ResourceType.FLOWERS: -100,
+                        },
+                    },
+                    2: {
+                        "value": 2,
+                        "next": {
+                            ResourceType.MONEY: -3000,
+                            ResourceType.SCRAPS: -1000,
+                            ResourceType.FLOWERS: -150,
+                            ResourceType.BRONZE_INGOTS: -5,
+                            ResourceType.SILVER_INGOTS: -5,
+                        },
+                    },
+                    3: {
+                        "value": 3,
+                        "next": {
+                            ResourceType.MONEY: -5000,
+                            ResourceType.SCRAPS: -2000,
+                            ResourceType.FLOWERS: -300,
+                            ResourceType.BRONZE_INGOTS: -15,
+                            ResourceType.SILVER_INGOTS: -10,
+                            ResourceType.GOLD_INGOTS: -5,
+                        },
+                    },
+                    4: {
+                        "value": 4,
+                        "next": {
+                            ResourceType.MONEY: -7500,
+                            ResourceType.SCRAPS: -3000,
+                            ResourceType.FLOWERS: -300,
+                            ResourceType.BRONZE_INGOTS: -25,
+                            ResourceType.SILVER_INGOTS: -15,
+                            ResourceType.GOLD_INGOTS: -10,
+                        },
+                    },
+                    5: {
+                        "value": 6,
+                        "next": {
+                            ResourceType.MONEY: -10000,
+                            ResourceType.SCRAPS: -5000,
+                            ResourceType.FLOWERS: -500,
+                            ResourceType.BRONZE_INGOTS: -50,
+                            ResourceType.SILVER_INGOTS: -35,
+                            ResourceType.GOLD_INGOTS: -25,
+                        },
+                    },
+                    6: {"value": 10, "next": None},
+                },
+            },
+            UpgradeSubtype.MEGA_BOMBS: {
+                "ordering": 5,
+                "title": "Запас ультра бомбы",
+                "upgrades": {
+                    0: {
+                        "value": 0,
+                        "next": {
+                            ResourceType.MONEY: -10000,
+                            ResourceType.BRONZE_INGOTS: -35,
+                            ResourceType.SILVER_INGOTS: -25,
+                            ResourceType.GOLD_INGOTS: -15,
+                        },
+                    },
+                    1: {
+                        "value": 1,
+                        "next": {
+                            ResourceType.MONEY: -20000,
+                            ResourceType.BRONZE_INGOTS: -50,
+                            ResourceType.SILVER_INGOTS: -50,
+                            ResourceType.GOLD_INGOTS: -30,
+                        },
+                    },
+                    2: {"value": 2, "next": None},
+                },
+            },
+            UpgradeSubtype.RANDOM_BOMBS: {
+                "ordering": 6,
+                "title": "Запас малой бомбы",
+                "upgrades": {
+                    0: {
+                        "value": 0,
+                        "next": {
+                            ResourceType.MONEY: -500,
+                            ResourceType.CROPS: -250,
+                            ResourceType.WOOD: -100,
+                        },
+                    },
+                    1: {
+                        "value": 1,
+                        "next": {
+                            ResourceType.MONEY: -1000,
+                            ResourceType.CROPS: -500,
+                            ResourceType.WOOD: -250,
+                        },
+                    },
+                    2: {
+                        "value": 2,
+                        "next": {
+                            ResourceType.MONEY: -2000,
+                            ResourceType.CROPS: -750,
+                            ResourceType.WOOD: -500,
+                        },
+                    },
+                    3: {
+                        "value": 3,
+                        "next": {
+                            ResourceType.MONEY: -3000,
+                            ResourceType.CROPS: -1000,
+                            ResourceType.WOOD: -750,
+                            ResourceType.SILK: -3,
+                        },
+                    },
+                    4: {
+                        "value": 4,
+                        "next": {
+                            ResourceType.MONEY: -5000,
+                            ResourceType.CROPS: -2000,
+                            ResourceType.WOOD: -1500,
+                            ResourceType.SILK: -7,
+                        },
+                    },
+                    5: {
+                        "value": 6,
+                        "next": {
+                            ResourceType.MONEY: -7500,
+                            ResourceType.CROPS: -3000,
+                            ResourceType.WOOD: -2000,
+                            ResourceType.SILK: -10,
+                        },
+                    },
+                    6: {"value": 8, "next": None},
+                },
+            },
+            UpgradeSubtype.CLEARS: {
+                "ordering": 7,
+                "title": "Запас чистого неба",
+                "upgrades": {
+                    0: {
+                        "value": 0,
+                        "next": {
+                            ResourceType.MONEY: -500,
+                            ResourceType.RAW_BRONZE: -20,
+                            ResourceType.RAW_SILVER: -10,
+                        },
+                    },
+                    1: {
+                        "value": 1,
+                        "next": {
+                            ResourceType.MONEY: -1000,
+                            ResourceType.RAW_BRONZE: -50,
+                            ResourceType.RAW_SILVER: -25,
+                            ResourceType.RAW_GOLD: -10,
+                        },
+                    },
+                    2: {
+                        "value": 2,
+                        "next": {
+                            ResourceType.MONEY: -2000,
+                            ResourceType.RAW_BRONZE: -100,
+                            ResourceType.RAW_SILVER: -50,
+                            ResourceType.RAW_GOLD: -20,
+                        },
+                    },
+                    3: {
+                        "value": 3,
+                        "next": {
+                            ResourceType.MONEY: -3000,
+                            ResourceType.RAW_BRONZE: -200,
+                            ResourceType.RAW_SILVER: -100,
+                            ResourceType.RAW_GOLD: -50,
+                        },
+                    },
+                    4: {
+                        "value": 4,
+                        "next": {
+                            ResourceType.MONEY: -5000,
+                            ResourceType.RAW_BRONZE: -500,
+                            ResourceType.RAW_SILVER: -250,
+                            ResourceType.RAW_GOLD: -100,
+                        },
+                    },
+                    5: {
+                        "value": 6,
+                        "next": {
+                            ResourceType.MONEY: -10000,
+                            ResourceType.RAW_BRONZE: -750,
+                            ResourceType.RAW_SILVER: -500,
+                            ResourceType.RAW_GOLD: -250,
+                        },
+                    },
+                    6: {"value": 10, "next": None},
+                },
+            },
+            UpgradeSubtype.PURIFIES: {
+                "ordering": 8,
+                "title": "Запас бомбы-очистки",
+                "upgrades": {
+                    0: {
+                        "value": 0,
+                        "next": {
+                            ResourceType.MONEY: -500,
+                            ResourceType.FLOWERS: -50,
+                        },
+                    },
+                    1: {
+                        "value": 1,
+                        "next": {
+                            ResourceType.MONEY: -1000,
+                            ResourceType.FLOWERS: -70,
+                        },
+                    },
+                    2: {
+                        "value": 2,
+                        "next": {
+                            ResourceType.MONEY: -2000,
+                            ResourceType.FLOWERS: -150,
+                        },
+                    },
+                    3: {
+                        "value": 3,
+                        "next": {
+                            ResourceType.MONEY: -3000,
+                            ResourceType.FLOWERS: -250,
+                            ResourceType.SILK: -5,
+                        },
+                    },
+                    4: {
+                        "value": 4,
+                        "next": {
+                            ResourceType.MONEY: -5000,
+                            ResourceType.FLOWERS: -350,
+                            ResourceType.SILK: -15,
+                            ResourceType.GOLD_INGOTS: -5,
+                        },
+                    },
+                    5: {
+                        "value": 5,
+                        "next": {
+                            ResourceType.MONEY: -10000,
+                            ResourceType.FLOWERS: -500,
+                            ResourceType.SILK: -25,
+                            ResourceType.GOLD_INGOTS: -10,
+                        },
+                    },
+                    6: {"value": 7, "next": None},
+                },
+            },
+            UpgradeSubtype.RANDOM_EFFECTS: {
+                "ordering": 9,
+                "title": "Запас бомбы с эффектами",
+                "upgrades": {
+                    0: {
+                        "value": 0,
+                        "next": {
+                            ResourceType.MONEY: -2000,
+                            ResourceType.BRONZE_INGOTS: -15,
+                            ResourceType.SILVER_INGOTS: -10,
+                            ResourceType.GOLD_INGOTS: -5,
+                        },
+                    },
+                    1: {
+                        "value": 1,
+                        "next": {
+                            ResourceType.MONEY: -5000,
+                            ResourceType.BRONZE_INGOTS: -50,
+                            ResourceType.SILVER_INGOTS: -25,
+                            ResourceType.GOLD_INGOTS: -15,
+                        },
+                    },
+                    2: {
+                        "value": 2,
+                        "next": {
+                            ResourceType.MONEY: -15000,
+                            ResourceType.BRONZE_INGOTS: -75,
+                            ResourceType.SILVER_INGOTS: -50,
+                            ResourceType.GOLD_INGOTS: -25,
+                        },
+                    },
+                    3: {"value": 3, "next": None},
+                },
+            },
+            UpgradeSubtype.FIRST_AID_KIT_HEAL: {
+                "ordering": 10,
+                "title": "Лечение от аптечки (используется в игре)",
+                "upgrades": {
+                    0: {
+                        "value": 15,
+                        "next": {
+                            ResourceType.MONEY: -2000,
+                            ResourceType.FLOWERS: -100,
+                        },
+                    },
+                    1: {
+                        "value": 25,
+                        "next": {
+                            ResourceType.MONEY: -3000,
+                            ResourceType.FLOWERS: -150,
+                        },
+                    },
+                    2: {
+                        "value": 40,
+                        "next": {
+                            ResourceType.MONEY: -5000,
+                            ResourceType.FLOWERS: -200,
+                            ResourceType.SCRAPS: -2000,
+                        },
+                    },
+                    3: {
+                        "value": 50,
+                        "next": {
+                            ResourceType.MONEY: -7500,
+                            ResourceType.FLOWERS: -250,
+                            ResourceType.SCRAPS: -3000,
+                        },
+                    },
+                    4: {
+                        "value": 65,
+                        "next": {
+                            ResourceType.MONEY: -10000,
+                            ResourceType.FLOWERS: -300,
+                            ResourceType.SCRAPS: -4000,
+                        },
+                    },
+                    5: {
+                        "value": 80,
+                        "next": {
+                            ResourceType.MONEY: -15000,
+                            ResourceType.FLOWERS: -400,
+                            ResourceType.SCRAPS: -5000,
+                            ResourceType.SILK: -100,
+                        },
+                    },
+                    6: {"value": 100, "next": None},
+                },
+            },
+            UpgradeSubtype.SHIELD_ARMOR: {
+                "ordering": 11,
+                "title": "Броня от магического щитка (используется в игре)",
+                "upgrades": {
+                    0: {
+                        "value": 2,
+                        "next": {
+                            ResourceType.MONEY: -1000,
+                            ResourceType.RAW_BRONZE: -100,
+                            ResourceType.BRONZE_INGOTS: -5,
+                        },
+                    },
+                    1: {
+                        "value": 3,
+                        "next": {
+                            ResourceType.MONEY: -2000,
+                            ResourceType.RAW_BRONZE: -150,
+                            ResourceType.BRONZE_INGOTS: -7,
+                            ResourceType.SILVER_INGOTS: -5,
+                        },
+                    },
+                    2: {
+                        "value": 4,
+                        "next": {
+                            ResourceType.MONEY: -3000,
+                            ResourceType.RAW_BRONZE: -200,
+                            ResourceType.RAW_SILVER: -100,
+                            ResourceType.BRONZE_INGOTS: -10,
+                            ResourceType.SILVER_INGOTS: -7,
+                        },
+                    },
+                    3: {
+                        "value": 5,
+                        "next": {
+                            ResourceType.MONEY: -4000,
+                            ResourceType.RAW_BRONZE: -250,
+                            ResourceType.RAW_SILVER: -100,
+                            ResourceType.RAW_GOLD: -30,
+                            ResourceType.BRONZE_INGOTS: -10,
+                            ResourceType.SILVER_INGOTS: -5,
+                        },
+                    },
+                    4: {
+                        "value": 6,
+                        "next": {
+                            ResourceType.MONEY: -5000,
+                            ResourceType.RAW_BRONZE: -300,
+                            ResourceType.RAW_SILVER: -100,
+                            ResourceType.RAW_GOLD: -50,
+                            ResourceType.BRONZE_INGOTS: -10,
+                            ResourceType.SILVER_INGOTS: -7,
+                            ResourceType.GOLD_INGOTS: -5,
+                        },
+                    },
+                    5: {
+                        "value": 8,
+                        "next": {
+                            ResourceType.MONEY: -7500,
+                            ResourceType.RAW_BRONZE: -500,
+                            ResourceType.RAW_SILVER: -300,
+                            ResourceType.RAW_GOLD: -200,
+                            ResourceType.BRONZE_INGOTS: -20,
+                            ResourceType.SILVER_INGOTS: -15,
+                            ResourceType.GOLD_INGOTS: -10,
+                        },
+                    },
+                    6: {"value": 10, "next": None},
+                },
+            },
+            UpgradeSubtype.IMMUNE_MAGICS_TURNS: {
+                "ordering": 12,
+                "title": "Ходов неуязвимости (используется в игре)",
+                "upgrades": {
+                    0: {
+                        "value": 1,
+                        "next": {
+                            ResourceType.MONEY: -2000,
+                            ResourceType.FLOWERS: -100,
+                            ResourceType.SCRAPS: -1000,
+                            ResourceType.RAW_SILVER: -100,
+                            ResourceType.RAW_GOLD: -50,
+                        },
+                    },
+                    1: {
+                        "value": 2,
+                        "next": {
+                            ResourceType.MONEY: -4000,
+                            ResourceType.FLOWERS: -200,
+                            ResourceType.SCRAPS: -2000,
+                            ResourceType.RAW_SILVER: -200,
+                            ResourceType.RAW_GOLD: -100,
+                        },
+                    },
+                    2: {
+                        "value": 3,
+                        "next": {
+                            ResourceType.MONEY: -7000,
+                            ResourceType.FLOWERS: -300,
+                            ResourceType.SCRAPS: -4000,
+                            ResourceType.RAW_SILVER: -400,
+                            ResourceType.RAW_GOLD: -200,
+                        },
+                    },
+                    3: {
+                        "value": 4,
+                        "next": {
+                            ResourceType.MONEY: -10000,
+                            ResourceType.FLOWERS: -500,
+                            ResourceType.SCRAPS: -5000,
+                            ResourceType.RAW_SILVER: -500,
+                            ResourceType.RAW_GOLD: -400,
+                        },
+                    },
+                    4: {"value": 5, "next": None},
+                },
+            },
+            UpgradeSubtype.INVENTORY_CARDS_DRAWN: {
+                "ordering": 13,
+                "title": "Сколько карт добавится от магической карты",
+                "upgrades": {
+                    0: {
+                        "value": 1,
+                        "next": {
+                            ResourceType.MONEY: -15000,
+                            ResourceType.SCRAPS: -10000,
+                            ResourceType.SILK: -50,
+                            ResourceType.GOLD_INGOTS: -25,
+                        },
+                    },
+                    1: {
+                        "value": 2,
+                        "next": {
+                            ResourceType.MONEY: -50000,
+                            ResourceType.SCRAPS: -25000,
+                            ResourceType.SILK: -100,
+                            ResourceType.GOLD_INGOTS: -50,
+                        },
+                    },
+                    2: {"value": 3, "next": None},
+                },
+            },
+            UpgradeSubtype.PURIFIES_TARGETS: {
+                "ordering": 14,
+                "title": "Целей на очистку от бомбы-очистки",
+                "upgrades": {
+                    0: {
+                        "value": 1,
+                        "next": {
+                            ResourceType.MONEY: -2500,
+                            ResourceType.FLOWERS: -100,
+                        },
+                    },
+                    1: {
+                        "value": 2,
+                        "next": {
+                            ResourceType.MONEY: -5000,
+                            ResourceType.FLOWERS: -200,
+                            ResourceType.RAW_SILVER: -200,
+                        },
+                    },
+                    2: {
+                        "value": 3,
+                        "next": {
+                            ResourceType.MONEY: -15000,
+                            ResourceType.FLOWERS: -400,
+                            ResourceType.RAW_SILVER: -400,
+                            ResourceType.RAW_GOLD: -300,
+                        },
+                    },
+                    3: {"value": 4, "next": None},
+                },
+            },
+            UpgradeSubtype.RANDOM_EFFECTS_TURNS: {
+                "ordering": 15,
+                "title": "Ходов от бомбы с эффектами",
+                "upgrades": {
+                    0: {
+                        "value": 1,
+                        "next": {
+                            ResourceType.MONEY: -15000,
+                            ResourceType.GOLD_INGOTS: -50,
+                            ResourceType.FLOWERS: -500,
+                            ResourceType.SILK: -25,
+                        },
+                    },
+                    1: {"value": 2, "next": None},
+                },
+            },
+            UpgradeSubtype.RANDOM_EFFECTS_VALUE: {
+                "ordering": 16,
+                "title": "Значение (число) бомбы с эффектами",
+                "upgrades": {
+                    0: {
+                        "value": 1,
+                        "next": {
+                            ResourceType.MONEY: -2000,
+                            ResourceType.SILVER_INGOTS: -5,
+                            ResourceType.GOLD_INGOTS: -3,
+                            ResourceType.FLOWERS: -100,
+                        },
+                    },
+                    1: {
+                        "value": 3,
+                        "next": {
+                            ResourceType.MONEY: -10000,
+                            ResourceType.SILVER_INGOTS: -20,
+                            ResourceType.GOLD_INGOTS: -15,
+                            ResourceType.FLOWERS: -300,
+                        },
+                    },
+                    2: {"value": 5, "next": None},
                 },
             },
         },
