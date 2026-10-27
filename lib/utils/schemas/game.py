@@ -255,7 +255,7 @@ DEFAULT_RESOURCES_TRANSITIONS = {
         ],
         "step": 1,
         "index": 14,
-"inventory": True,
+        "inventory": True,
     },
     ResourceType.DRAW_CARDS: {
         ResourceTransitionActionType.CRAFT: [
@@ -271,7 +271,7 @@ DEFAULT_RESOURCES_TRANSITIONS = {
         ],
         "step": 1,
         "index": 15,
-"inventory": True,
+        "inventory": True,
     },
     ResourceType.MEGA_BOMBS: {
         ResourceTransitionActionType.CRAFT: [
@@ -290,7 +290,7 @@ DEFAULT_RESOURCES_TRANSITIONS = {
         ],
         "step": 1,
         "index": 16,
-"inventory": True,
+        "inventory": True,
     },
     ResourceType.RANDOM_BOMBS: {
         ResourceTransitionActionType.CRAFT: [
@@ -305,7 +305,7 @@ DEFAULT_RESOURCES_TRANSITIONS = {
         ],
         "step": 1,
         "index": 17,
-"inventory": True,
+        "inventory": True,
     },
     ResourceType.CLEARS: {
         ResourceTransitionActionType.CRAFT: [
@@ -319,7 +319,7 @@ DEFAULT_RESOURCES_TRANSITIONS = {
         ],
         "step": 1,
         "index": 18,
-"inventory": True,
+        "inventory": True,
     },
     ResourceType.PURIFIES: {
         ResourceTransitionActionType.CRAFT: [
@@ -334,7 +334,7 @@ DEFAULT_RESOURCES_TRANSITIONS = {
         ],
         "step": 1,
         "index": 19,
-"inventory": True,
+        "inventory": True,
     },
     ResourceType.RANDOM_EFFECTS: {
         ResourceTransitionActionType.CRAFT: [
@@ -350,7 +350,7 @@ DEFAULT_RESOURCES_TRANSITIONS = {
         ],
         "step": 1,
         "index": 20,
-"inventory": True,
+        "inventory": True,
     },
 }
 
