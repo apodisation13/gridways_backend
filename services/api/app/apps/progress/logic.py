@@ -326,9 +326,16 @@ async def get_user_resources(
                 rare_gem,
                 money,
                 flowers,
+                -- inventory items
                 first_aid_kits,
                 shields,
-                immune_magics
+                immune_magics,
+                draw_cards,
+                mega_bombs,
+                random_bombs,
+                clears,
+                purifies,
+                random_effects
             FROM user_resources
             WHERE id = $1
         """,
@@ -426,6 +433,7 @@ async def cap_resources_to_max(
         if delta <= 0 or resource_type == ResourceType.KEYS:
             continue
 
+        resource_upgrade_type = UpgradeType.RESOURCES
         if resource_type == ResourceType.MONEY:
             correct_upgrade_subtype = UpgradeSubtype.MONEY
         elif resource_type == ResourceType.SCRAPS:
@@ -444,18 +452,40 @@ async def cap_resources_to_max(
             correct_upgrade_subtype = UpgradeSubtype.KEGS
         elif resource_type == ResourceType.FLOWERS:
             correct_upgrade_subtype = UpgradeSubtype.FLOWERS
+        # inventory items
         elif resource_type == ResourceType.FIRST_AID_KITS:
             correct_upgrade_subtype = UpgradeSubtype.FIRST_AID_KITS
+            resource_upgrade_type = UpgradeType.INVENTORY
         elif resource_type == ResourceType.SHIELDS:
             correct_upgrade_subtype = UpgradeSubtype.SHIELDS
+            resource_upgrade_type = UpgradeType.INVENTORY
         elif resource_type == ResourceType.IMMUNE_MAGICS:
             correct_upgrade_subtype = UpgradeSubtype.IMMUNE_MAGICS
+            resource_upgrade_type = UpgradeType.INVENTORY
+        elif resource_type == ResourceType.DRAW_CARDS:
+            correct_upgrade_subtype = UpgradeSubtype.DRAW_CARDS
+            resource_upgrade_type = UpgradeType.INVENTORY
+        elif resource_type == ResourceType.MEGA_BOMBS:
+            correct_upgrade_subtype = UpgradeSubtype.MEGA_BOMBS
+            resource_upgrade_type = UpgradeType.INVENTORY
+        elif resource_type == ResourceType.RANDOM_BOMBS:
+            correct_upgrade_subtype = UpgradeSubtype.RANDOM_BOMBS
+            resource_upgrade_type = UpgradeType.INVENTORY
+        elif resource_type == ResourceType.CLEARS:
+            correct_upgrade_subtype = UpgradeSubtype.CLEARS
+            resource_upgrade_type = UpgradeType.INVENTORY
+        elif resource_type == ResourceType.PURIFIES:
+            correct_upgrade_subtype = UpgradeSubtype.PURIFIES
+            resource_upgrade_type = UpgradeType.INVENTORY
+        elif resource_type == ResourceType.RANDOM_EFFECTS:
+            correct_upgrade_subtype = UpgradeSubtype.RANDOM_EFFECTS
+            resource_upgrade_type = UpgradeType.INVENTORY
         else:
             raise ValueError(f"Unknown resource type for max cap: {resource_type}")
 
         # почему тут 0 по умолчанию - если апгрейд новый (добавленный недавно), его еще нет у юзера, берем 0 тогда
-        user_upgrade_level: int = user_upgrades[UpgradeType.RESOURCES].get(correct_upgrade_subtype, 0)
-        level_data: dict = upgrades_config[UpgradeType.RESOURCES]["upgrades"][correct_upgrade_subtype]["upgrades"][
+        user_upgrade_level: int = user_upgrades[resource_upgrade_type].get(correct_upgrade_subtype, 0)
+        level_data: dict = upgrades_config[resource_upgrade_type]["upgrades"][correct_upgrade_subtype]["upgrades"][
             str(user_upgrade_level)
         ]
         max_value: int = level_data["value"]

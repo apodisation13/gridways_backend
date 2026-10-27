@@ -96,6 +96,7 @@ class UserResource(BaseModel, TimestampMixin):
         nullable=False,
         server_default="0",
     )
+    # inventory items
     first_aid_kits: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
@@ -107,6 +108,36 @@ class UserResource(BaseModel, TimestampMixin):
         server_default="0",
     )
     immune_magics: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default="0",
+    )
+    draw_cards: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default="0",
+    )
+    mega_bombs: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default="0",
+    )
+    random_bombs: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default="0",
+    )
+    clears: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default="0",
+    )
+    purifies: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default="0",
+    )
+    random_effects: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
         server_default="0",

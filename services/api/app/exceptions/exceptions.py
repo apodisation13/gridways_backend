@@ -44,3 +44,7 @@ class PurchaseDoesNotExistError(Exception):
 
 class PaymentNotificationProcessError(Exception):
     pass
+
+
+class PatchInventoryProcessError(Exception):
+    pass

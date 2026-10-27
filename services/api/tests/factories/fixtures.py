@@ -24,6 +24,7 @@ from lib.utils.models import (
     Type,
     UserCard,
     UserDeck,
+    UserInventory,
     UserLeader,
     UserLevel,
     UserPreferences,
@@ -59,6 +60,7 @@ from services.api.tests.factories.factories import (
     TypeFactory,
     UserCardFactory,
     UserDeckFactory,
+    UserInventoryFactory,
     UserLeaderFactory,
     UserLevelFactory,
     UserPreferenceFactory,
@@ -316,6 +318,14 @@ def user_stats_factory(db_connection):
 def user_upgrades_factory(db_connection):
     async def factory(**kwargs) -> UserUpgrades:
         return await UserUpgradesFactory.create_in_db(conn=db_connection, **kwargs)
+
+    return factory
+
+
+@pytest_asyncio.fixture
+def user_inventory_factory(db_connection):
+    async def factory(**kwargs) -> UserInventory:
+        return await UserInventoryFactory.create_in_db(conn=db_connection, **kwargs)
 
     return factory
 

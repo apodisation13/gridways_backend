@@ -22,9 +22,16 @@ class UserResources(Base):
     rare_gem: int
     money: int
     flowers: int
+    # inventory items
     first_aid_kits: int
     shields: int
     immune_magics: int
+    draw_cards: int
+    mega_bombs: int
+    random_bombs: int
+    clears: int
+    purifies: int
+    random_effects: int
 
     @staticmethod
     def get_one(
@@ -48,9 +55,16 @@ class UserResources(Base):
             rare_gem=row["rare_gem"],
             money=row["money"],
             flowers=row["flowers"],
+            # inventory items
             first_aid_kits=row["first_aid_kits"],
             shields=row["shields"],
             immune_magics=row["immune_magics"],
+            draw_cards=row["draw_cards"],
+            mega_bombs=row["mega_bombs"],
+            random_bombs=row["random_bombs"],
+            clears=row["clears"],
+            purifies=row["purifies"],
+            random_effects=row["random_effects"],
         )
 
 

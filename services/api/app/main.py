@@ -10,6 +10,7 @@ from services.api.app.apps.api_docs.routes import router as swagger_router
 from services.api.app.apps.auth.routes import router as users_router
 from services.api.app.apps.cards.routes import router as cards_router
 from services.api.app.apps.game_const.routes import router as game_const_router
+from services.api.app.apps.inventory.routes import router as inventory_router
 from services.api.app.apps.news.routes import router as news_router
 from services.api.app.apps.preferences.routes import router as preferences_router
 from services.api.app.apps.progress.routes import router as progress_router
@@ -85,5 +86,6 @@ api_v1_router.include_router(preferences_router, prefix="/preferences", tags=["p
 api_v1_router.include_router(stats_router, prefix="/statistics", tags=["statistics"])
 api_v1_router.include_router(purchases_router, prefix="", tags=["purchases"])
 api_v1_router.include_router(upgrades_router, prefix="", tags=["upgrades"])
+api_v1_router.include_router(inventory_router, prefix="", tags=["inventory"])
 
 app.include_router(api_v1_router)

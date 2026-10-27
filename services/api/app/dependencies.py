@@ -4,6 +4,7 @@ from lib.utils.db.pool import Database
 from services.api.app.apps.auth.service import AuthService
 from services.api.app.apps.cards.service import CardsService
 from services.api.app.apps.game_const.service import GameConstService
+from services.api.app.apps.inventory.service import InventoryService
 from services.api.app.apps.news.service import NewsService
 from services.api.app.apps.preferences.service import PreferencesService
 from services.api.app.apps.progress.service import UserProgressService
@@ -121,6 +122,16 @@ async def get_upgrades_service(
     config: Config = Depends(get_config),
 ) -> UpgradesService:
     return UpgradesService(
+        db_pool=db_pool,
+        config=config,
+    )
+
+
+async def get_inventory_service(
+    db_pool: Database = Depends(get_db),
+    config: Config = Depends(get_config),
+) -> InventoryService:
+    return InventoryService(
         db_pool=db_pool,
         config=config,
     )

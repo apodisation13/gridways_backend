@@ -102,9 +102,16 @@ class TestUserRegisterAPI:
                 rare_gem,
                 money,
                 flowers,
+                -- inventory items
                 first_aid_kits,
                 shields,
-                immune_magics
+                immune_magics,
+                draw_cards,
+                mega_bombs,
+                random_bombs,
+                clears,
+                purifies,
+                random_effects
             FROM user_resources
             """,
         )
@@ -130,9 +137,16 @@ class TestUserRegisterAPI:
                 rare_gem=0,
                 money=3000,
                 flowers=0,
+                # inventory items
                 first_aid_kits=0,
                 shields=0,
                 immune_magics=0,
+                draw_cards=0,
+                mega_bombs=0,
+                random_bombs=0,
+                clears=0,
+                purifies=0,
+                random_effects=0,
             ).model_dump()
         )
 
