@@ -26,6 +26,7 @@ from lib.utils.models import (
     Type,
     UserCard,
     UserDeck,
+    UserInventory,
     UserLeader,
     UserLevel,
     UserPreferences,
@@ -349,3 +350,11 @@ class UserUpgradesFactory(BaseModelFactory):
 
     id = factory.SubFactory(UserFactory)
     data = DEFAULT_USER_UPGRADES
+
+
+class UserInventoryFactory(BaseModelFactory):
+    class Meta:
+        model = UserInventory
+
+    id = factory.SubFactory(UserFactory)
+    data = {"slots": []}
