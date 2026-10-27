@@ -69,9 +69,16 @@ class TestManageResourcesLevelStartWinAPI:
                 rare_gem=0,
                 money=user_resources.money - 1000,
                 flowers=0,
+                # inventory items
                 first_aid_kits=0,
                 shields=0,
                 immune_magics=0,
+                draw_cards=0,
+                mega_bombs=0,
+                random_bombs=0,
+                clears=0,
+                purifies=0,
+                random_effects=0,
             ).model_dump()
         )
 
@@ -207,9 +214,16 @@ class TestManageResourcesLevelStartWinAPI:
                 rare_gem=0,
                 money=user_resources.money + 1000,
                 flowers=0,
+                # inventory items
                 first_aid_kits=0,
                 shields=0,
                 immune_magics=0,
+                draw_cards=0,
+                mega_bombs=0,
+                random_bombs=0,
+                clears=0,
+                purifies=0,
+                random_effects=0,
             ).model_dump()
         )
 
@@ -282,9 +296,16 @@ class TestManageResourcesOpenResourceAPI:
                 rare_gem=0,
                 money=user_resources.money,
                 flowers=0,
+                # inventory items
                 first_aid_kits=0,
                 shields=0,
                 immune_magics=0,
+                draw_cards=0,
+                mega_bombs=0,
+                random_bombs=0,
+                clears=0,
+                purifies=0,
+                random_effects=0,
             ).model_dump()
         )
 
@@ -439,9 +460,16 @@ class TestManageResourcesTransitionAPI:
                 rare_gem=0,
                 money=expected_result_money,  # а тут списали деньги
                 flowers=0,
+                # inventory items
                 first_aid_kits=0,
                 shields=0,
                 immune_magics=0,
+                draw_cards=0,
+                mega_bombs=0,
+                random_bombs=0,
+                clears=0,
+                purifies=0,
+                random_effects=0,
             ).model_dump()
         )
 
@@ -616,9 +644,16 @@ class TestManageResourcesTransitionAPI:
                 rare_gem=0,
                 money=expected_result_money,  # а тут списали деньги
                 flowers=0,
+                # inventory items
                 first_aid_kits=0,
                 shields=0,
                 immune_magics=0,
+                draw_cards=0,
+                mega_bombs=0,
+                random_bombs=0,
+                clears=0,
+                purifies=0,
+                random_effects=0,
             ).model_dump()
         )
 
@@ -696,9 +731,16 @@ class TestManageResourcesTransitionAPI:
                 rare_gem=0,
                 money=expected_result_money,  # а тут списали деньги
                 flowers=0,
+                # inventory items
                 first_aid_kits=0,
                 shields=0,
                 immune_magics=0,
+                draw_cards=0,
+                mega_bombs=0,
+                random_bombs=0,
+                clears=0,
+                purifies=0,
+                random_effects=0,
             ).model_dump()
         )
 
@@ -776,9 +818,16 @@ class TestManageResourcesTransitionAPI:
                 rare_gem=0,
                 money=expected_result_money,  # а тут списали деньги
                 flowers=0,
+                # inventory items
                 first_aid_kits=0,
                 shields=0,
                 immune_magics=0,
+                draw_cards=0,
+                mega_bombs=0,
+                random_bombs=0,
+                clears=0,
+                purifies=0,
+                random_effects=0,
             ).model_dump()
         )
 
@@ -936,8 +985,15 @@ class TestManageResourcesTransitionAPI:
                 rare_gem=0,
                 money=expected_result_money,  # а тут списали деньги
                 flowers=0,
+                # inventory items
                 first_aid_kits=0,
                 shields=0,
                 immune_magics=0,
+                draw_cards=0,
+                mega_bombs=0,
+                random_bombs=0,
+                clears=0,
+                purifies=0,
+                random_effects=0,
             ).model_dump()
         )

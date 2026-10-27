@@ -57,8 +57,15 @@ class TestGetUserResourcesAPI:
                 rare_gem=0,
                 money=2000,
                 flowers=0,
+                # inventory items
                 first_aid_kits=0,
                 shields=0,
                 immune_magics=0,
+                draw_cards=0,
+                mega_bombs=0,
+                random_bombs=0,
+                clears=0,
+                purifies=0,
+                random_effects=0,
             ).model_dump()
         )
