@@ -10,6 +10,7 @@ from services.api.app.exceptions.exceptions import (
     DeckRequestError,
     ManageResourcesProcessError,
     NegativeResourcesError,
+    PatchInventoryProcessError,
     PaymentNotificationProcessError,
     ProductDoesNotExistError,
     PurchaseDoesNotExistError,
@@ -233,5 +234,6 @@ def add_exceptions(app: FastAPI) -> FastAPI:
     app.add_exception_handler(ProductDoesNotExistError, not_found_exception_handler)
     app.add_exception_handler(PurchaseDoesNotExistError, not_found_exception_handler)
     app.add_exception_handler(PaymentNotificationProcessError, bad_request_global_exception_handler)
+    app.add_exception_handler(PatchInventoryProcessError, bad_request_global_exception_handler)
     app.add_exception_handler(Exception, global_exception_handler)
     return app
