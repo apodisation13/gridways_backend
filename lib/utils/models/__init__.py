@@ -3,6 +3,7 @@ from .events import Event, EventLog
 from .game.cards import Ability, Card, CardDeck, Deck, Leader, PassiveAbility, Type
 from .game.core import Color, Faction, GameConstants
 from .game.enemies import Deathwish, Enemy, EnemyLeader, EnemyLeaderAbility, EnemyPassiveAbility, Move
+from .game.inventory import UserInventory
 from .game.preferences import UserPreferences
 from .game.progress import UserCard, UserDeck, UserLeader, UserLevel, UserResource, UserSeason
 from .game.seasons import Level, LevelEnemy, LevelRelatedLevels, Season, SeasonRelatedSeasons
@@ -49,6 +50,7 @@ __all__ = [
     "User",
     "UserCard",
     "UserDeck",
+    "UserInventory",
     "UserLeader",
     "UserLevel",
     "UserPreferences",
