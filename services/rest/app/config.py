@@ -28,6 +28,8 @@ load_env()
 
 
 class Config(BaseConfig):
+    SQL_LOGGING: bool = get_secret("SQL_LOGGING", default=False, cast=bool)
+
     DJANGO_SECRET_KEY = get_secret(
         "DJANGO_SECRET_KEY",
         default="django-insecure-your-secret-key-change-this!",

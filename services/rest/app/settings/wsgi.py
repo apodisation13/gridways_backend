@@ -2,6 +2,8 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
+from services.rest.app.sql_logging import configure_sql_logging_if_enabled
+
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config")
 
@@ -31,3 +33,6 @@ def init_app():
 init_app()
 
 application = get_wsgi_application()
+
+# runserver уже вызывал django.setup(): WSGI повторно сбрасывает логгеры, но не вызывает ready().
+configure_sql_logging_if_enabled()
