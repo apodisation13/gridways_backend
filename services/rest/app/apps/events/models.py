@@ -30,3 +30,25 @@ class Event(models.Model):
 
     def __str__(self) -> str:
         return f"Событие {self.type}"
+
+
+class EventLog(models.Model):
+    class Meta:
+        managed = False
+        db_table = "event_log"
+        verbose_name = "Запись журнала событий"
+        verbose_name_plural = "Журнал событий"
+        ordering = ("-created_at",)
+
+    id = models.UUIDField(primary_key=True)
+    type = models.CharField(max_length=255, choices=EventType.choices())
+    state = models.CharField(max_length=255)
+    payload = models.JSONField(default=dict)
+    actions_log = models.JSONField(default=list)
+    retry_count = models.IntegerField(default=0)
+    dedup_key = models.CharField(max_length=255, null=True, blank=True, unique=True)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField()
+
+    def __str__(self) -> str:
+        return f"{self.type}: {self.id} ({self.state})"

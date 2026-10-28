@@ -1,5 +1,7 @@
 from django import forms
 from django.contrib import admin
+from django.db.models import QuerySet
+from django.http import HttpRequest
 
 from apps.enemies.models import Deathwish, Enemy, EnemyLeader, EnemyLeaderAbility, EnemyPassiveAbility, Move
 from django_json_widget.widgets import JSONEditorWidget
@@ -22,6 +24,7 @@ class EnemyLeaderForm(forms.ModelForm):
             "faction",
             "ability",
             "passive_ability",
+            "deathwish",
             "data",
         )
         widgets = {"data": JSONEditorWidget}
@@ -39,6 +42,7 @@ class EnemyForm(forms.ModelForm):
             "color",
             "faction",
             "passive_ability",
+            "deathwish",
             "data",
         )
         widgets = {"data": JSONEditorWidget}
@@ -46,11 +50,15 @@ class EnemyForm(forms.ModelForm):
 
 @admin.register(EnemyLeader)
 class EnemyLeaderAdmin(admin.ModelAdmin):
+    def get_queryset(self, request: HttpRequest) -> QuerySet:
+        return super().get_queryset(request).select_related("faction", "ability", "passive_ability", "deathwish")
+
     form = EnemyLeaderForm
     list_filter = (
         "faction_id",
         "ability_id",
         "passive_ability_id",
+        "deathwish",
     )
     list_display = [
         "id",
@@ -71,6 +79,9 @@ class EnemyLeaderAdmin(admin.ModelAdmin):
 
 @admin.register(Enemy)
 class EnemyAdmin(admin.ModelAdmin):
+    def get_queryset(self, request: HttpRequest) -> QuerySet:
+        return super().get_queryset(request).select_related("faction", "color", "move", "passive_ability", "deathwish")
+
     form = EnemyForm
     list_filter = (
         "faction_id",

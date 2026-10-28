@@ -23,6 +23,7 @@ APPS = [
     "apps.products.apps.ProductsConfig",
     "apps.purchases.apps.PurchasesConfig",
     "apps.user_progress.apps.UserProgressConfig",
+    "apps.stats.apps.StatsConfig",
 ]
 
 

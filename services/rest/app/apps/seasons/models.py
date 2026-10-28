@@ -36,8 +36,19 @@ class Season(models.Model):
         default=False,
     )
 
+    x = models.IntegerField(default=0, verbose_name="Координата X")
+    y = models.IntegerField(default=0, verbose_name="Координата Y")
+    data = models.JSONField(default=dict, blank=True, null=True, verbose_name="Награды сезона")
+    related_seasons = models.ManyToManyField(
+        "self",
+        through="SeasonRelatedSeasons",
+        through_fields=("season", "related_season"),
+        symmetrical=False,
+        related_name="previous_seasons",
+    )
+
     def __str__(self) -> str:
-        return f"{self.name}, {self.description[:30]}"
+        return f"{self.pk}: {self.name}"
 
 
 class Level(models.Model):
@@ -96,6 +107,8 @@ class Level(models.Model):
         null=False,
     )
 
+    data = models.JSONField(default=dict, blank=True, null=True, verbose_name="Награды уровня")
+
     enemies = models.ManyToManyField(
         Enemy,
         related_name="levels",
@@ -104,18 +117,18 @@ class Level(models.Model):
     related_levels = models.ManyToManyField(
         "Level",
         through="LevelRelatedLevels",
+        through_fields=("level", "related_level"),
+        symmetrical=False,
         related_name="rel_levels",
     )
 
     def __str__(self) -> str:
-        return (
-            f"{self.pk}:{self.name}, появление: {self.starting_enemies_number}, "
-            f"сложность {self.difficulty}, врагов {self.number_of_enemies()}, лидер {self.enemy_leader}"
-        )
+        return f"{self.pk}: {self.name}"
 
     def number_of_enemies(self) -> int:
-        """для админки, чтобы показать это количество"""
-        return len(self.l.all())
+        if hasattr(self, "enemies_count"):
+            return self.enemies_count
+        return self.l.count()
 
     def get_related_levels(self) -> list:
         """для админки, чтобы показать краткую информацию"""
@@ -160,7 +173,7 @@ class LevelRelatedLevels(models.Model):
     )
 
     def save(self, *args, **kwargs) -> None:
-        self.connection = f"{self.level.id}-{self.related_level.id}"
+        self.connection = f"{self.level_id}-{self.related_level_id}"
         super().save(*args, **kwargs)
 
 
@@ -181,3 +194,26 @@ class LevelEnemy(models.Model):
         related_name="l",
         on_delete=models.PROTECT,
     )
+
+
+class SeasonRelatedSeasons(models.Model):
+    class Meta:
+        managed = False
+        db_table = "season_related_seasons"
+        verbose_name = "Связь сезонов"
+        verbose_name_plural = "Связи сезонов"
+        unique_together = (("season", "related_season"),)
+
+    season = models.ForeignKey(Season, related_name="children", on_delete=models.PROTECT)
+    related_season = models.ForeignKey(Season, related_name="incoming_links", on_delete=models.PROTECT)
+    line = models.CharField(max_length=16, choices=LINE_CHOICES, blank=True, null=True)
+    connection = models.CharField(max_length=16, blank=True, null=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs) -> None:
+        self.connection = f"{self.season_id}-{self.related_season_id}"
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.season_id} → {self.related_season_id}"

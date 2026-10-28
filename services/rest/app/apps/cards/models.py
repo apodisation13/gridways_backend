@@ -127,6 +127,7 @@ class Leader(models.Model):
         null=True,
         default=None,
     )
+    newly_added = models.BooleanField(default=False, verbose_name="Недавно добавлен")
     data = models.JSONField(
         default=dict,
         blank=False,
