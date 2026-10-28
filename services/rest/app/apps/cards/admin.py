@@ -53,7 +53,6 @@ class CardForm(forms.ModelForm):
 @admin.register(Leader)
 class LeaderAdmin(admin.ModelAdmin):
     form = LeaderForm
-    list_select_related = ("ability", "faction", "passive_ability")
 
     def get_queryset(self, request: HttpRequest) -> QuerySet:
         return super().get_queryset(request).select_related("ability", "faction", "passive_ability")
