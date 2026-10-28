@@ -40,8 +40,11 @@ class Season(models.Model):
     y = models.IntegerField(default=0, verbose_name="Координата Y")
     data = models.JSONField(default=dict, blank=True, null=True, verbose_name="Награды сезона")
     related_seasons = models.ManyToManyField(
-        "self", through="SeasonRelatedSeasons", through_fields=("season", "related_season"),
-        symmetrical=False, related_name="previous_seasons",
+        "self",
+        through="SeasonRelatedSeasons",
+        through_fields=("season", "related_season"),
+        symmetrical=False,
+        related_name="previous_seasons",
     )
 
     def __str__(self) -> str:

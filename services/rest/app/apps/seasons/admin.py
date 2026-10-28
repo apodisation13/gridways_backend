@@ -38,7 +38,10 @@ class LevelEnemyInLine(admin.TabularInline):
         return super().get_queryset(request).select_related("level", "enemy__faction", "enemy__color", "enemy__move")
 
     def formfield_for_foreignkey(
-        self, db_field: models.ForeignKey, request: HttpRequest, **kwargs,
+        self,
+        db_field: models.ForeignKey,
+        request: HttpRequest,
+        **kwargs,
     ) -> forms.ModelChoiceField:
         if db_field.name == "enemy":
             kwargs["queryset"] = Enemy.objects.select_related("faction", "color", "move")
@@ -62,8 +65,16 @@ class LevelAdmin(admin.ModelAdmin):
     inlines = (LevelEnemyInLine, LevelInline)
     list_filter = ("difficulty", "enemy_leader_id", "season")
     list_display = (
-        "id", "name", "starting_enemies_number", "difficulty", "enemy_leader_admin",
-        "number_of_enemies_admin", "get_related_levels", "x", "y", "season",
+        "id",
+        "name",
+        "starting_enemies_number",
+        "difficulty",
+        "enemy_leader_admin",
+        "number_of_enemies_admin",
+        "get_related_levels",
+        "x",
+        "y",
+        "season",
     )
     list_display_links = ("id", "name")
     search_fields = ("name",)
@@ -72,14 +83,18 @@ class LevelAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request: HttpRequest) -> models.QuerySet:
         return (
-            super().get_queryset(request)
+            super()
+            .get_queryset(request)
             .select_related("season", "enemy_leader__ability", "enemy_leader__passive_ability")
             .annotate(enemies_count=models.Count("l", distinct=True))
             .prefetch_related(models.Prefetch("related_levels", queryset=Level.objects.only("id", "name")))
         )
 
     def formfield_for_foreignkey(
-        self, db_field: models.ForeignKey, request: HttpRequest, **kwargs,
+        self,
+        db_field: models.ForeignKey,
+        request: HttpRequest,
+        **kwargs,
     ) -> forms.ModelChoiceField:
         if db_field.name == "enemy_leader":
             kwargs["queryset"] = db_field.remote_field.model.objects.select_related("ability", "passive_ability")

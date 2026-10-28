@@ -79,7 +79,10 @@ class UserProgressEntryAdmin(admin.ModelAdmin):
         return f"Юзер {obj.user_id}: {obj.user.username} {obj.user.email}"
 
     def formfield_for_foreignkey(
-        self, db_field: models.ForeignKey, request: HttpRequest, **kwargs,
+        self,
+        db_field: models.ForeignKey,
+        request: HttpRequest,
+        **kwargs,
     ) -> forms.ModelChoiceField:
         if db_field.name in ("card", "leader"):
             kwargs["queryset"] = db_field.remote_field.model.objects.select_related("ability")
@@ -143,7 +146,10 @@ class CardDeckInline(admin.TabularInline):
         return super().get_queryset(request).select_related("card__ability")
 
     def formfield_for_foreignkey(
-        self, db_field: models.ForeignKey, request: HttpRequest, **kwargs,
+        self,
+        db_field: models.ForeignKey,
+        request: HttpRequest,
+        **kwargs,
     ) -> forms.ModelChoiceField:
         if db_field.name == "card":
             kwargs["queryset"] = Card.objects.select_related("ability")
@@ -167,8 +173,12 @@ class DeckAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "leader", "owners_label")
     list_display_links = ("id", "name")
     search_fields = (
-        "=id", "name", "leader__name",
-        "=userdeck__user__id", "userdeck__user__username", "userdeck__user__email",
+        "=id",
+        "name",
+        "leader__name",
+        "=userdeck__user__id",
+        "userdeck__user__username",
+        "userdeck__user__email",
     )
     autocomplete_fields = ("leader",)
     fields = ("name", "leader")
@@ -181,26 +191,32 @@ class DeckAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request: HttpRequest) -> models.QuerySet:
         return (
-            super().get_queryset(request)
+            super()
+            .get_queryset(request)
             .select_related("leader__ability")
-            .prefetch_related(models.Prefetch(
-                "userdeck_set",
-                queryset=UserDeck.objects.exclude(deck_id=1).select_related("user").order_by("user_id"),
-                to_attr="owners",
-            ))
+            .prefetch_related(
+                models.Prefetch(
+                    "userdeck_set",
+                    queryset=UserDeck.objects.exclude(deck_id=1).select_related("user").order_by("user_id"),
+                    to_attr="owners",
+                )
+            )
         )
 
     @admin.display(description="Владелец")
     def owners_label(self, obj: Deck) -> str:
         if obj.pk == 1:
             return "Общая базовая колода"
-        return "; ".join(
-            f"Юзер {owner.user_id}: {owner.user.username} {owner.user.email}"
-            for owner in obj.owners
-        ) or "Нет владельца"
+        return (
+            "; ".join(f"Юзер {owner.user_id}: {owner.user.username} {owner.user.email}" for owner in obj.owners)
+            or "Нет владельца"
+        )
 
     def formfield_for_foreignkey(
-        self, db_field: models.ForeignKey, request: HttpRequest, **kwargs,
+        self,
+        db_field: models.ForeignKey,
+        request: HttpRequest,
+        **kwargs,
     ) -> forms.ModelChoiceField:
         if db_field.name == "leader":
             kwargs["queryset"] = Leader.objects.select_related("ability")

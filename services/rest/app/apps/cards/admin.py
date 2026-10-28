@@ -146,4 +146,3 @@ class CardAdmin(admin.ModelAdmin):
     @admin.display(description="ХП")
     def get_hp(self, obj: Card) -> int:
         return obj.data.get("hp")
-

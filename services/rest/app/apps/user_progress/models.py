@@ -40,14 +40,17 @@ class UserResource(models.Model):
     purifies = models.IntegerField(default=0, blank=False, null=False)
     random_effects = models.IntegerField(default=0, blank=False, null=False)
 
-
     def __str__(self) -> str:
         return f"Юзер {self.pk}: {self.id.username} {self.id.email}"
 
 
 class UserJSONData(models.Model):
     user = models.OneToOneField(
-        User, primary_key=True, db_column="id", on_delete=models.PROTECT, verbose_name="Пользователь",
+        User,
+        primary_key=True,
+        db_column="id",
+        on_delete=models.PROTECT,
+        verbose_name="Пользователь",
     )
     data = models.JSONField(default=dict, blank=True, verbose_name="Данные")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")

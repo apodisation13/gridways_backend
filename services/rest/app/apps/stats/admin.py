@@ -37,7 +37,10 @@ class LeaderboardAdmin(UserStatsAdminBase):
         return super().get_queryset(request).select_related("user", "leader__ability")
 
     def formfield_for_foreignkey(
-        self, db_field: models.ForeignKey, request: HttpRequest, **kwargs,
+        self,
+        db_field: models.ForeignKey,
+        request: HttpRequest,
+        **kwargs,
     ) -> forms.ModelChoiceField:
         if db_field.name == "leader":
             kwargs["queryset"] = Leader.objects.select_related("ability")

@@ -52,7 +52,15 @@ class EventAdmin(admin.ModelAdmin):
 @admin.register(EventLog)
 class EventLogAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "type", "state", "payload", "actions_log", "retry_count", "dedup_key", "created_at", "updated_at",
+        "id",
+        "type",
+        "state",
+        "payload",
+        "actions_log",
+        "retry_count",
+        "dedup_key",
+        "created_at",
+        "updated_at",
     )
     readonly_fields = list_display
     fields = list_display
