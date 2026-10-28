@@ -1,5 +1,7 @@
 from django import forms
 from django.contrib import admin
+from django.db.models import QuerySet
+from django.http import HttpRequest
 
 from apps.cards.models import Ability, Card, CardDeck, Deck, Leader, PassiveAbility, Type
 from django_json_widget.widgets import JSONEditorWidget
@@ -22,6 +24,7 @@ class LeaderForm(forms.ModelForm):
             "faction",
             "ability",
             "passive_ability",
+            "newly_added",
             "data",
         )
         widgets = {"data": JSONEditorWidget}
@@ -50,14 +53,21 @@ class CardForm(forms.ModelForm):
 @admin.register(Leader)
 class LeaderAdmin(admin.ModelAdmin):
     form = LeaderForm
+    list_select_related = ("ability", "faction", "passive_ability")
+
+    def get_queryset(self, request: HttpRequest) -> QuerySet:
+        return super().get_queryset(request).select_related("ability", "faction", "passive_ability")
+
     list_filter = (
         "faction_id",
         "ability_id",
         "passive_ability_id",
+        "newly_added",
     )
     list_display = [
         "id",
         "name",
+        "newly_added",
         "get_damage",
         "get_charges",
         "get_hp",

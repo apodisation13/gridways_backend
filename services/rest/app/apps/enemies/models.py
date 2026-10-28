@@ -216,6 +216,13 @@ class EnemyLeader(models.Model):
         blank=True,
         null=True,
     )
+    deathwish = models.ForeignKey(
+        Deathwish,
+        related_name="enemy_leaders",
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+    )
     data = models.JSONField(
         default=dict,
         blank=False,
@@ -224,4 +231,4 @@ class EnemyLeader(models.Model):
     )
 
     def __str__(self) -> str:
-        return f"{self.pk} - {self.name}, абилка - {self.ability}, пассивка - {self.passive_ability}"
+        return f"{self.pk} - {self.name}"
