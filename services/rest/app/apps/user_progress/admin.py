@@ -199,7 +199,7 @@ class DeckAdmin(admin.ModelAdmin):
                     "userdeck_set",
                     queryset=UserDeck.objects.exclude(deck_id=1).select_related("user").order_by("user_id"),
                     to_attr="owners",
-                )
+                ),
             )
         )
 
