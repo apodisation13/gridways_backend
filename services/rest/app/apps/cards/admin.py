@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.db.models import QuerySet
 from django.http import HttpRequest
 
-from apps.cards.models import Ability, Card, CardDeck, Deck, Leader, PassiveAbility, Type
+from apps.cards.models import Ability, Card, Leader, PassiveAbility, Type
 from django_json_widget.widgets import JSONEditorWidget
 
 
@@ -97,6 +97,10 @@ class LeaderAdmin(admin.ModelAdmin):
 @admin.register(Card)
 class CardAdmin(admin.ModelAdmin):
     form = CardForm
+
+    def get_queryset(self, request: HttpRequest) -> QuerySet:
+        return super().get_queryset(request).select_related("type", "color", "ability")
+
     list_filter = (
         "faction_id",
         "color_id",
@@ -144,17 +148,3 @@ class CardAdmin(admin.ModelAdmin):
     def get_hp(self, obj: Card) -> int:
         return obj.data.get("hp")
 
-
-class CardDeckInLine(admin.TabularInline):
-    model = CardDeck
-    extra = 0
-    autocomplete_fields = ["card"]
-
-
-@admin.register(Deck)
-class DeckAdmin(admin.ModelAdmin):
-    inlines = (CardDeckInLine,)
-    list_filter = ("leader_id",)
-    list_display = [field.name for field in Deck._meta.fields]
-    list_display_links = [field.name for field in Deck._meta.fields]
-    search_fields = ("name",)
