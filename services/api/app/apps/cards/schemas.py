@@ -192,7 +192,6 @@ class Enemy(Base):
 class LevelRelatedLevel(Base):
     related_level_id: int | None
     line: str | None
-    connection: str | None
 
 
 class Level(Base):
@@ -211,7 +210,6 @@ class Level(Base):
 class SeasonRelatedSeason(Base):
     related_season_id: int | None
     line: str | None
-    connection: str | None
 
 
 class Season(Base):

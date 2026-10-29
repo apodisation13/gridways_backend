@@ -223,8 +223,7 @@ async def get_level_related_levels(
             SELECT
                 levels.id,
                 level_related_levels.related_level_id,
-                level_related_levels.line,
-                level_related_levels.connection
+                level_related_levels.line
             FROM levels
             LEFT JOIN level_related_levels ON levels.id = level_related_levels.level_id
             WHERE levels.id = ANY ($1)
@@ -237,7 +236,6 @@ async def get_level_related_levels(
         level_id = row["id"]
         level_related_level = LevelRelatedLevel(
             line=row["line"],
-            connection=row["connection"],
             related_level_id=row["related_level_id"],
         )
         if level_id not in level_ids_dict:
@@ -258,8 +256,7 @@ async def get_season_related_seasons(
             SELECT
                 seasons.id,
                 season_related_seasons.related_season_id,
-                season_related_seasons.line,
-                season_related_seasons.connection
+                season_related_seasons.line
             FROM seasons
             LEFT JOIN season_related_seasons ON season_related_seasons.season_id = seasons.id
             WHERE seasons.id = ANY ($1)
@@ -272,7 +269,6 @@ async def get_season_related_seasons(
         season_id = row["id"]
         season_related_season = SeasonRelatedSeason(
             line=row["line"],
-            connection=row["connection"],
             related_season_id=row["related_season_id"],
         )
         if season_id not in season_ids_dict:

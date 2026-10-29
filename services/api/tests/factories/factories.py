@@ -251,7 +251,6 @@ class LevelRelatedLevelsFactory(BaseModelFactory):
     level_id = factory.SubFactory(LevelFactory)
     related_level_id = factory.SubFactory(LevelFactory)
     line = "right"
-    connection = "1-2"
 
 
 class SeasonRelatedSeasonsFactory(BaseModelFactory):
@@ -261,7 +260,6 @@ class SeasonRelatedSeasonsFactory(BaseModelFactory):
     season_id = factory.SubFactory(SeasonFactory)
     related_season_id = factory.SubFactory(SeasonFactory)
     line = "right"
-    connection = "1-2"
 
 
 class LevelEnemyFactory(BaseModelFactory):

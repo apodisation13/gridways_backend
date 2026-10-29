@@ -127,10 +127,6 @@ class LevelRelatedLevels(BaseModel, TimestampMixin):
         String(16),
         nullable=True,
     )
-    connection: Mapped[str] = mapped_column(
-        String(16),
-        nullable=True,
-    )
 
 
 class LevelEnemy(BaseModel, TimestampMixin):
@@ -179,10 +175,6 @@ class SeasonRelatedSeasons(BaseModel, TimestampMixin):
         nullable=False,
     )
     line: Mapped[Optional[str]] = mapped_column(
-        String(16),
-        nullable=True,
-    )
-    connection: Mapped[str] = mapped_column(
         String(16),
         nullable=True,
     )
