@@ -164,17 +164,6 @@ class LevelRelatedLevels(models.Model):
         null=True,
         max_length=16,
     )
-    connection = models.CharField(
-        verbose_name="Связь в виде строки",
-        help_text="Например: (1-5), сохраняется автоматически",
-        max_length=16,
-        blank=False,
-        null=False,
-    )
-
-    def save(self, *args, **kwargs) -> None:
-        self.connection = f"{self.level_id}-{self.related_level_id}"
-        super().save(*args, **kwargs)
 
 
 class LevelEnemy(models.Model):
@@ -207,13 +196,6 @@ class SeasonRelatedSeasons(models.Model):
     season = models.ForeignKey(Season, related_name="children", on_delete=models.PROTECT)
     related_season = models.ForeignKey(Season, related_name="incoming_links", on_delete=models.PROTECT)
     line = models.CharField(max_length=16, choices=LINE_CHOICES, blank=True, null=True)
-    connection = models.CharField(max_length=16, blank=True, null=True, editable=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def save(self, *args, **kwargs) -> None:
-        self.connection = f"{self.season_id}-{self.related_season_id}"
-        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"{self.season_id} → {self.related_season_id}"

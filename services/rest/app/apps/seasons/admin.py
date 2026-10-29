@@ -11,8 +11,7 @@ from django_json_widget.widgets import JSONEditorWidget
 class SeasonRelatedSeasonsInline(admin.TabularInline):
     model = SeasonRelatedSeasons
     fk_name = "season"
-    fields = ("line", "related_season", "connection")
-    readonly_fields = ("connection",)
+    fields = ("line", "related_season")
     autocomplete_fields = ("related_season",)
     extra = 0
 
