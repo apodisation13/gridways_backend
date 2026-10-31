@@ -330,6 +330,7 @@ class LeaderboardFactory(BaseModelFactory, TimeStampMixinFactory):
     leader_id = factory.SubFactory(LeaderFactory)
     mode = LeaderboardGameMode.SEASON
     max_kills = 1
+    max_arena_level = 0
 
 
 class UserStatsFactory(BaseModelFactory, TimeStampMixinFactory):

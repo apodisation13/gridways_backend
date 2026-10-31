@@ -28,7 +28,7 @@ class UserStatsAdmin(UserStatsAdminBase):
 
 @admin.register(Leaderboard)
 class LeaderboardAdmin(UserStatsAdminBase):
-    list_display = ("id", "user_label", "leader", "mode", "max_kills", "created_at", "updated_at")
+    list_display = ("id", "user_label", "leader", "mode", "max_kills", "max_arena_level", "created_at", "updated_at")
     list_filter = ("mode",)
     search_fields = ("=user__id", "user__username", "user__email", "leader__name")
     autocomplete_fields = ("user", "leader")

@@ -37,6 +37,7 @@ class Leaderboard(models.Model):
     leader = models.ForeignKey(Leader, on_delete=models.PROTECT, verbose_name="Лидер")
     mode = models.CharField(max_length=32, verbose_name="Режим игры")
     max_kills = models.IntegerField(default=1, verbose_name="Максимум убийств")
+    max_arena_level = models.IntegerField(default=1, verbose_name="Максимальный уровень в Арене")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
 

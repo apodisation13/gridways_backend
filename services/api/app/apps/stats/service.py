@@ -238,6 +238,7 @@ class StatsService:
                     leaders.id AS leader_id,
                     factions.name AS faction_name,
                     leaderboard.max_kills AS max_kills,
+                    leaderboard.max_arena_level AS max_arena_level,
                     leaderboard.mode AS mode
                 FROM
                     users
@@ -265,6 +266,7 @@ class StatsService:
                 leader_id=row["leader_id"],
                 faction_name=row["faction_name"],
                 max_kills=row["max_kills"],
+                max_arena_level=row["max_arena_level"],
                 mode=row["mode"],
             )
             for row in leaderboards
@@ -280,6 +282,7 @@ class StatsService:
         user_deck_id = post_leaderboard_request.user_deck_id
         mode = post_leaderboard_request.mode
         max_kills = post_leaderboard_request.max_kills
+        max_arena_level: int | None = post_leaderboard_request.max_arena_level
 
         async with self.db_pool.connection() as connection:
             leader_id: int | None = await connection.fetchval(
@@ -306,20 +309,23 @@ class StatsService:
             await connection.fetchrow(
                 """
                     INSERT INTO leaderboard
-                    (user_id, leader_id, max_kills, mode)
-                    VALUES ($1, $2, $3, $4)
+                    (user_id, leader_id, max_kills, mode, max_arena_level)
+                    VALUES ($1, $2, $3, $4, COALESCE($5::integer, 0))
                     ON CONFLICT (user_id, leader_id, mode)
                     DO UPDATE
                     SET
-                        max_kills = EXCLUDED.max_kills,
+                        max_kills = GREATEST(leaderboard.max_kills, EXCLUDED.max_kills),
+                        max_arena_level = GREATEST(leaderboard.max_arena_level, EXCLUDED.max_arena_level),
                         updated_at = NOW()
                     WHERE
                         leaderboard.max_kills < EXCLUDED.max_kills
+                        OR leaderboard.max_arena_level < EXCLUDED.max_arena_level
                 """,
                 user_id,
                 leader_id,
                 max_kills,
                 mode,
+                max_arena_level,
             )
 
         return {"200": "OK"}
@@ -339,6 +345,7 @@ class StatsService:
                     leaders.id AS leader_id,
                     factions.name AS faction_name,
                     leaderboard.max_kills AS max_kills,
+                    leaderboard.max_arena_level AS max_arena_level,
                     leaderboard.mode AS mode
                 FROM
                     users
@@ -360,6 +367,7 @@ class StatsService:
                 leader_id=row["leader_id"],
                 faction_name=row["faction_name"],
                 max_kills=row["max_kills"],
+                max_arena_level=row["max_arena_level"],
                 mode=row["mode"],
             )
             for row in leaderboards

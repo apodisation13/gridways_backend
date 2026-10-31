@@ -36,6 +36,11 @@ class Leaderboard(BaseModel, TimestampMixin):
         nullable=False,
         server_default="1",
     )
+    max_arena_level: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default="0",
+    )
 
 
 class UserStats(BaseModel, TimestampMixin):

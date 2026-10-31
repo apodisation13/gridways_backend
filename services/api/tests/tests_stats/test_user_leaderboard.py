@@ -6,11 +6,11 @@ from httpx import AsyncClient
 from lib.utils.schemas.game import LeaderboardGameMode
 
 
-class TestGetUserLeaderboardAPI:
+@pytest.mark.asyncio
+class TestUserLeaderboardAPI:
     endpoint = "statistics/{user_id}/leaderboard"
 
     @pytest.mark.usefixtures("init_db_cards")
-    @pytest.mark.asyncio
     async def test_get_leaderboard(
         self,
         # service fixtures
@@ -74,6 +74,7 @@ class TestGetUserLeaderboardAPI:
                 "username": "username",
                 "user_avatar": None,
                 "max_kills": 17,
+                "max_arena_level": 0,
                 "mode": LeaderboardGameMode.SEASON,
                 "leader_id": l2.id,
                 "faction_name": "Neutral",
@@ -83,6 +84,7 @@ class TestGetUserLeaderboardAPI:
                 "username": "username",
                 "user_avatar": None,
                 "max_kills": 17,
+                "max_arena_level": 0,
                 "mode": LeaderboardGameMode.RANDOM,
                 "leader_id": 1,
                 "faction_name": "Soldiers",
@@ -92,6 +94,7 @@ class TestGetUserLeaderboardAPI:
                 "username": "username",
                 "user_avatar": None,
                 "max_kills": 7,
+                "max_arena_level": 0,
                 "mode": LeaderboardGameMode.SEASON,
                 "leader_id": 1,
                 "faction_name": "Soldiers",
@@ -99,7 +102,6 @@ class TestGetUserLeaderboardAPI:
         ]
 
     @pytest.mark.usefixtures("init_db_cards")
-    @pytest.mark.asyncio
     async def test_post_leaderboard(
         self,
         # service fixtures
@@ -227,6 +229,7 @@ class TestGetUserLeaderboardAPI:
                 "username": "username",
                 "user_avatar": None,
                 "max_kills": 27,
+                "max_arena_level": 0,
                 "mode": LeaderboardGameMode.RANDOM,
                 "leader_id": 1,
                 "faction_name": "Soldiers",
@@ -236,6 +239,7 @@ class TestGetUserLeaderboardAPI:
                 "username": "username",
                 "user_avatar": None,
                 "max_kills": 12,
+                "max_arena_level": 0,
                 "mode": LeaderboardGameMode.RANDOM,
                 "leader_id": l2.id,
                 "faction_name": "Neutral",
@@ -245,14 +249,64 @@ class TestGetUserLeaderboardAPI:
                 "username": "username",
                 "user_avatar": None,
                 "max_kills": 8,
+                "max_arena_level": 0,
                 "mode": LeaderboardGameMode.SEASON,
                 "leader_id": 1,
                 "faction_name": "Soldiers",
             },
         ]
 
+    @pytest.mark.usefixtures("init_db_cards")
+    async def test_post_arena_leaderboard(
+        self,
+        client: AsyncClient,
+        user_login_fixture,
+        user_deck_factory,
+        db_connection,
+    ):
+        user_id = user_login_fixture["id"]
+        access_token = user_login_fixture["token"]["access_token"]
+        user_deck = await user_deck_factory(user_id=user_id, deck_id=1)
+        previous = None
 
-class TestGetWorldLeaderboardAPI:
+        for result, expected in [
+            ({"max_kills": 43}, (43, 0)),
+            ({"max_kills": 43, "max_arena_level": 6}, (43, 6)),
+            ({"max_kills": 40, "max_arena_level": 7}, (43, 7)),
+            ({"max_kills": 50, "max_arena_level": 5}, (50, 7)),
+            ({"max_kills": 50, "max_arena_level": 7}, (50, 7)),
+            ({"max_kills": 40, "max_arena_level": 5}, (50, 7)),
+            ({"max_kills": 51}, (51, 7)),
+            ({"max_kills": 52, "max_arena_level": None}, (52, 7)),
+            ({"max_kills": 60, "max_arena_level": 8}, (60, 8)),
+        ]:
+            payload = {
+                "user_deck_id": user_deck.id,
+                "mode": LeaderboardGameMode.ARENA,
+            }
+            payload.update(result)
+            response = await client.post(
+                self.endpoint.format(user_id=user_id),
+                headers={"Authorization": f"Bearer {access_token}"},
+                json=payload,
+            )
+            assert response.status_code == 200
+            rows = await db_connection.fetch(
+                "SELECT * FROM leaderboard WHERE user_id = $1 AND mode = $2",
+                user_id,
+                LeaderboardGameMode.ARENA,
+            )
+            assert len(rows) == 1
+            current = rows[0]
+            assert (current["max_kills"], current["max_arena_level"]) == expected
+            if previous is not None:
+                assert current["id"] == previous["id"]
+                if (previous["max_kills"], previous["max_arena_level"]) == expected:
+                    assert current["updated_at"] == previous["updated_at"]
+            previous = current
+
+
+class TestWorldLeaderboardAPI:
     endpoint = "statistics/{user_id}/leaderboard-world"
 
     @pytest.mark.usefixtures("init_db_cards")
@@ -342,6 +396,7 @@ class TestGetWorldLeaderboardAPI:
                 "username": "user_2",
                 "user_avatar": None,
                 "max_kills": 17,
+                "max_arena_level": 0,
                 "mode": LeaderboardGameMode.SEASON,
                 "leader_id": 1,
                 "faction_name": "Soldiers",
@@ -351,6 +406,7 @@ class TestGetWorldLeaderboardAPI:
                 "username": "username",
                 "user_avatar": None,
                 "max_kills": 17,
+                "max_arena_level": 0,
                 "mode": LeaderboardGameMode.RANDOM,
                 "leader_id": 1,
                 "faction_name": "Soldiers",
@@ -360,6 +416,7 @@ class TestGetWorldLeaderboardAPI:
                 "username": "user_3",
                 "user_avatar": "some_avatar",
                 "max_kills": 16,
+                "max_arena_level": 0,
                 "mode": LeaderboardGameMode.RANDOM_N,
                 "leader_id": 1,
                 "faction_name": "Soldiers",
@@ -369,6 +426,7 @@ class TestGetWorldLeaderboardAPI:
                 "username": "user_3",
                 "user_avatar": "some_avatar",
                 "max_kills": 7,
+                "max_arena_level": 0,
                 "mode": LeaderboardGameMode.SEASON,
                 "leader_id": 1,
                 "faction_name": "Soldiers",
@@ -378,6 +436,7 @@ class TestGetWorldLeaderboardAPI:
                 "username": "username",
                 "user_avatar": None,
                 "max_kills": 7,
+                "max_arena_level": 0,
                 "mode": LeaderboardGameMode.SEASON,
                 "leader_id": 1,
                 "faction_name": "Soldiers",
