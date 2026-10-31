@@ -250,6 +250,7 @@ class StatsService:
                     users.id = $1
                 ORDER BY
                     leaderboard.max_kills DESC,
+                    leaderboard.max_arena_level DESC,
                     leaderboard.updated_at DESC
                 """,
                 user_id,
@@ -355,6 +356,7 @@ class StatsService:
                 LEFT JOIN user_preferences ON users.id = user_preferences.id
                 ORDER BY
                     leaderboard.max_kills DESC,
+                    leaderboard.max_arena_level DESC,
                     leaderboard.updated_at DESC
                 """,
             )
