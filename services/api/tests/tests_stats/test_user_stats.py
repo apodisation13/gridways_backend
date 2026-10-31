@@ -213,24 +213,16 @@ class TestPostUserStatsAPI:
         db_connection,
         client: AsyncClient,
         user_login_fixture,
-        # fixtures for test
-        user_deck_factory,
     ):
         user_id = user_login_fixture["id"]
         access_token = user_login_fixture["token"]["access_token"]
-
-        # базовая колода фракции 1
-        user_deck = await user_deck_factory(
-            user_id=user_id,
-            deck_id=1,
-        )
 
         # -------------- 1й запрос - юзер еще не играл ранее --------------
         response = await client.post(
             self.endpoint.format(user_id=user_id),
             headers={"Authorization": f"Bearer {access_token}"},
             json={
-                "user_deck_id": user_deck.id,
+                "leader_id": 1,  # из базовой колоды
                 "type": UserStatsRecordType.PLAY,
             },
         )
@@ -254,7 +246,7 @@ class TestPostUserStatsAPI:
             self.endpoint.format(user_id=user_id),
             headers={"Authorization": f"Bearer {access_token}"},
             json={
-                "user_deck_id": user_deck.id,
+                "leader_id": 1,
                 "type": UserStatsRecordType.PLAY,
             },
         )
@@ -279,7 +271,7 @@ class TestPostUserStatsAPI:
             self.endpoint.format(user_id=user_id),
             headers={"Authorization": f"Bearer {access_token}"},
             json={
-                "user_deck_id": user_deck.id,
+                "leader_id": 1,
                 "type": UserStatsRecordType.WIN,
             },
         )

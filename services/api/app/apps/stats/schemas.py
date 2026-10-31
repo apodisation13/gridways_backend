@@ -38,7 +38,7 @@ class GetStatsResponse(Base):
 
 
 class PostStatsRequest(Base):
-    user_deck_id: int
+    leader_id: int
     type: UserStatsRecordType
 
 
@@ -54,7 +54,7 @@ class GetLeaderboardResponse(Base):
 
 
 class PostLeaderboardRequest(Base):
-    user_deck_id: int
+    leader_id: int
     mode: LeaderboardGameMode
     max_kills: int
     max_arena_level: int | None = None
