@@ -108,24 +108,17 @@ class TestUserLeaderboardAPI:
         client: AsyncClient,
         user_login_fixture,
         # fixtures for test
-        user_deck_factory,
         leader_factory,
-        deck_factory,
     ):
         user_id = user_login_fixture["id"]
         access_token = user_login_fixture["token"]["access_token"]
-
-        user_deck = await user_deck_factory(
-            user_id=user_id,
-            deck_id=1,
-        )
 
         # -------------- 1й запрос - играем 1ю игру --------------
         response = await client.post(
             self.endpoint.format(user_id=user_id),
             headers={"Authorization": f"Bearer {access_token}"},
             json={
-                "user_deck_id": user_deck.id,
+                "leader_id": 1,  # из базовой колоды
                 "max_kills": 21,
                 "mode": LeaderboardGameMode.RANDOM,
             },
@@ -141,7 +134,7 @@ class TestUserLeaderboardAPI:
             self.endpoint.format(user_id=user_id),
             headers={"Authorization": f"Bearer {access_token}"},
             json={
-                "user_deck_id": user_deck.id,
+                "leader_id": 1,
                 "max_kills": 17,
                 "mode": LeaderboardGameMode.RANDOM,
             },
@@ -157,7 +150,7 @@ class TestUserLeaderboardAPI:
             self.endpoint.format(user_id=user_id),
             headers={"Authorization": f"Bearer {access_token}"},
             json={
-                "user_deck_id": user_deck.id,
+                "leader_id": 1,
                 "max_kills": 27,
                 "mode": LeaderboardGameMode.RANDOM,
             },
@@ -173,7 +166,7 @@ class TestUserLeaderboardAPI:
             self.endpoint.format(user_id=user_id),
             headers={"Authorization": f"Bearer {access_token}"},
             json={
-                "user_deck_id": user_deck.id,
+                "leader_id": 1,
                 "max_kills": 8,
                 "mode": LeaderboardGameMode.SEASON,
             },
@@ -189,21 +182,13 @@ class TestUserLeaderboardAPI:
             faction_id=1,  # Neutral
             ability_id=1,
         )
-        new_deck = await deck_factory(
-            name="new-deck",
-            leader_id=l2.id,
-        )
-        new_user_deck = await user_deck_factory(
-            user_id=user_id,
-            deck_id=new_deck.id,
-        )
 
         # -------------- 5й запрос - другая фракция --------------
         response = await client.post(
             self.endpoint.format(user_id=user_id),
             headers={"Authorization": f"Bearer {access_token}"},
             json={
-                "user_deck_id": new_user_deck.id,
+                "leader_id": l2.id,
                 "max_kills": 12,
                 "mode": LeaderboardGameMode.RANDOM,
             },
@@ -259,14 +244,13 @@ class TestUserLeaderboardAPI:
     @pytest.mark.usefixtures("init_db_cards")
     async def test_post_arena_leaderboard(
         self,
+        # service fixtures
         client: AsyncClient,
-        user_login_fixture,
-        user_deck_factory,
         db_connection,
+        user_login_fixture,
     ):
         user_id = user_login_fixture["id"]
         access_token = user_login_fixture["token"]["access_token"]
-        user_deck = await user_deck_factory(user_id=user_id, deck_id=1)
         previous = None
 
         for result, expected in [
@@ -281,7 +265,7 @@ class TestUserLeaderboardAPI:
             ({"max_kills": 60, "max_arena_level": 8}, (60, 8)),
         ]:
             payload = {
-                "user_deck_id": user_deck.id,
+                "leader_id": 1,  # из базовой колоды
                 "mode": LeaderboardGameMode.ARENA,
             }
             payload.update(result)

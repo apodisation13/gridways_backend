@@ -37,7 +37,7 @@ async def post_user_stats(
 ) -> dict:
     return await stats_service.post_user_stats(
         user_id=user_id,
-        user_deck_id=post_stats_request.user_deck_id,
+        leader_id=post_stats_request.leader_id,
         game_type=post_stats_request.type,
     )
 
