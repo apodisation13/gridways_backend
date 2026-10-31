@@ -306,11 +306,11 @@ class TestUserLeaderboardAPI:
             previous = current
 
 
+@pytest.mark.asyncio
 class TestWorldLeaderboardAPI:
     endpoint = "statistics/{user_id}/leaderboard-world"
 
     @pytest.mark.usefixtures("init_db_cards")
-    @pytest.mark.asyncio
     async def test_get_leaderboard_world(
         self,
         # service fixtures
