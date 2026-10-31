@@ -49,6 +49,7 @@ class GetLeaderboardResponse(Base):
     faction_name: str
     leader_id: int
     max_kills: int
+    max_arena_level: int | None = None
     mode: LeaderboardGameMode
 
 
@@ -56,3 +57,4 @@ class PostLeaderboardRequest(Base):
     user_deck_id: int
     mode: LeaderboardGameMode
     max_kills: int
+    max_arena_level: int | None = None

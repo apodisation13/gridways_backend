@@ -745,6 +745,7 @@ class LeaderboardGameMode(StrEnum):
     RANDOM_N = "random_n"
     SEASON = "season"
     ARENA = "arena"
+    MULTIPLAYER = "multiplayer"
 
 
 class UserStatsRecordType(StrEnum):
