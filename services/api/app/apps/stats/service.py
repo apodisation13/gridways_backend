@@ -1,7 +1,7 @@
 import logging
 
 from lib.utils.db.pool import Database
-from lib.utils.schemas.game import UserStatsRecordType
+from lib.utils.schemas.game import LeaderboardGameMode, UserStatsRecordType
 from services.api.app.apps.stats.schemas import (
     CardsStats,
     GameStats,
@@ -182,7 +182,7 @@ class StatsService:
     async def post_user_stats(
         self,
         user_id: int,
-        user_deck_id: int,
+        leader_id: int,
         game_type: UserStatsRecordType,
     ) -> dict:
         async with self.db_pool.connection() as connection:
@@ -191,21 +191,17 @@ class StatsService:
                 SELECT
                     leaders.faction_id
                 FROM
-                    user_decks
-                JOIN decks ON decks.id = user_decks.deck_id
-                JOIN leaders ON decks.leader_id = leaders.id
+                    leaders
                 WHERE
-                    user_decks.id = $1
-                    AND user_decks.user_id = $2;
+                    leaders.id = $1
                 """,
-                user_deck_id,
-                user_id,
+                leader_id,
             )
 
             if not leader_faction_id:
-                msg = "Can not find such user_deck (%s) for user %s"
-                logger.warning(msg, user_deck_id, user_id)
-                raise PostStatsError(msg % (user_deck_id, user_id))
+                msg = "Can not find such leader %s (user %s)"
+                logger.warning(msg, leader_id, user_id)
+                raise PostStatsError(msg % (leader_id, user_id))
 
             await connection.fetchrow(
                 """
@@ -250,6 +246,7 @@ class StatsService:
                     users.id = $1
                 ORDER BY
                     leaderboard.max_kills DESC,
+                    leaderboard.max_arena_level DESC,
                     leaderboard.updated_at DESC
                 """,
                 user_id,
@@ -279,33 +276,14 @@ class StatsService:
         user_id: int,
         post_leaderboard_request: PostLeaderboardRequest,
     ) -> dict:
-        user_deck_id = post_leaderboard_request.user_deck_id
-        mode = post_leaderboard_request.mode
-        max_kills = post_leaderboard_request.max_kills
+        # для арены - лидер любой, никакие проверки его наличия у юзера делать нельзя
+        # а для не арены - лидер может отличаться от колодного из-за абилки замены лидера, тоже нельзя проверять
+        leader_id: int = post_leaderboard_request.leader_id
+        mode: LeaderboardGameMode = post_leaderboard_request.mode
+        max_kills: int = post_leaderboard_request.max_kills
         max_arena_level: int | None = post_leaderboard_request.max_arena_level
 
         async with self.db_pool.connection() as connection:
-            leader_id: int | None = await connection.fetchval(
-                """
-                SELECT
-                    leaders.id
-                FROM
-                    user_decks
-                JOIN decks ON decks.id = user_decks.deck_id
-                JOIN leaders ON decks.leader_id = leaders.id
-                WHERE
-                    user_decks.id = $1
-                    AND user_decks.user_id = $2;
-                """,
-                user_deck_id,
-                user_id,
-            )
-
-            if not leader_id:
-                msg = "Can not find such user_deck (%s) for user %s"
-                logger.warning(msg, user_deck_id, user_id)
-                raise PostStatsError(msg % (user_deck_id, user_id))
-
             await connection.fetchrow(
                 """
                     INSERT INTO leaderboard
@@ -355,6 +333,7 @@ class StatsService:
                 LEFT JOIN user_preferences ON users.id = user_preferences.id
                 ORDER BY
                     leaderboard.max_kills DESC,
+                    leaderboard.max_arena_level DESC,
                     leaderboard.updated_at DESC
                 """,
             )
