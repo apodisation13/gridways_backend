@@ -12,7 +12,7 @@ from lib.utils.schemas.game import (
     ResourceTransitionActionType,
     ResourceType,
 )
-from services.api.app.apps.game_const import logic as game_const_logic
+from services.api.app.apps.game_data.logic import game_const as game_const_logic
 from services.api.app.apps.progress import logic
 from services.api.app.apps.progress.schemas import (
     CardCraftBonusResponse,
@@ -37,7 +37,7 @@ from services.api.app.exceptions.exceptions import (
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
-    from services.api.app.apps.cards.schemas import Card
+    from services.api.app.apps.game_data.schemas import Card
 
 logger = logging.getLogger(__name__)
 

@@ -1,14 +1,16 @@
+from unittest.mock import ANY
+
 import pytest
 
 from httpx import AsyncClient
 
 
-class TestGetCardsAPI:
-    endpoint = "cards"
+class TestGetGameDataAPI:
+    endpoint = "game-data"
 
     @pytest.mark.usefixtures("init_db_cards")
     @pytest.mark.asyncio
-    async def test_get_cards(
+    async def test_get_game_data(
         self,
         # service fixtures
         client: AsyncClient,
@@ -26,6 +28,16 @@ class TestGetCardsAPI:
         response_json = response.json()
 
         expected_result = {
+            "game_const": {
+                "max_random_n_enemies": 200,
+                "resources_transitions": ANY,
+                "key_rewards": ANY,
+                "win_level_rewards": ANY,
+                "start_level_prices": ANY,
+                "cards_resources_prices": ANY,
+                "upgrades": ANY,
+                "arena_upgrades": ANY,
+            },
             "cards": [
                 {
                     "id": 3,
@@ -219,14 +231,30 @@ class TestGetCardsAPI:
             },
         }
 
+        assert response_json["game_const"] == expected_result["game_const"]
+        assert set(response_json) == {"cards", "leaders", "enemies", "enemy_leaders", "seasons", "game_const"}
         assert response_json["enemies"] == expected_result["enemies"]
         assert response_json["enemy_leaders"] == expected_result["enemy_leaders"]
         assert response_json["cards"] == expected_result["cards"]
         assert response_json["leaders"] == expected_result["leaders"]
 
+    @pytest.mark.asyncio
+    async def test_get_game_data_without_constants(
+        self,
+        client: AsyncClient,
+        user_login_fixture,
+    ):
+        response = await client.get(
+            self.endpoint,
+            headers={"Authorization": f"Bearer {user_login_fixture['token']['access_token']}"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["game_const"] == {}
+
     @pytest.mark.usefixtures("init_db_cards")
     @pytest.mark.asyncio
-    async def test_get_cards_unauthorized(
+    async def test_get_game_data_unauthorized(
         self,
         # service fixtures
         client: AsyncClient,

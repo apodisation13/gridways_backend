@@ -1,6 +1,6 @@
 import asyncpg
 
-from services.api.app.apps.cards.schemas import (
+from services.api.app.apps.game_data.schemas import (
     Card,
     Enemy,
     EnemyLeader,

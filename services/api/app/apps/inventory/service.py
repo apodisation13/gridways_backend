@@ -2,7 +2,7 @@ import logging
 
 from lib.utils.db.pool import Database
 from lib.utils.schemas.game import ResourceType, UpgradeSubtype, UpgradeType
-from services.api.app.apps.game_const import logic as game_const_logic
+from services.api.app.apps.game_data.logic import game_const as game_const_logic
 from services.api.app.config import Config
 from services.api.app.exceptions.exceptions import PatchInventoryProcessError
 

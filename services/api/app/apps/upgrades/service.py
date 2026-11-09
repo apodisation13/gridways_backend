@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from lib.utils.db.pool import Database
 from lib.utils.schemas.game import DEFAULT_USER_UPGRADES, UpgradeSubtype, UpgradeType
-from services.api.app.apps.game_const import logic as game_const_logic
+from services.api.app.apps.game_data.logic import game_const as game_const_logic
 from services.api.app.apps.progress import logic as progress_logic
 from services.api.app.apps.upgrades.schemas import PostUpgradeResponse
 from services.api.app.config import Config

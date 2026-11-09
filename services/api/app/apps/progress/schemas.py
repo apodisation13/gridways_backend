@@ -1,7 +1,14 @@
 from lib.utils.schemas import Base
 from lib.utils.schemas.game import CardActionSubtype, ResourceActionSubtype, ResourceType
 from pydantic import Field, NonNegativeInt, PositiveInt
-from services.api.app.apps.cards.schemas import Deck
+
+
+class Deck(Base):
+    id: int
+    name: str
+    leader_id: int
+    cards: list[int]
+    health: int
 
 
 class UserResources(Base):
