@@ -10,6 +10,7 @@ class TestGetUserPreferences:
         self,
         # service fixtures
         db_connection,
+        # fixtures for test
         user_factory,
     ):
         """
@@ -34,8 +35,8 @@ class TestGetUserPreferences:
         self,
         # service fixtures
         db_connection,
-        user_factory,
         # fixtures for test
+        user_factory,
         user_preferences_factory,
     ):
         """

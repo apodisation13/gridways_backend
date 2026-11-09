@@ -12,6 +12,7 @@ class TestGetUserUpgrades:
         self,
         # service fixtures
         db_connection,
+        # fixtures for test
         user_factory,
     ):
         """
@@ -36,8 +37,8 @@ class TestGetUserUpgrades:
         self,
         # service fixtures
         db_connection,
-        user_factory,
         # fixtures for test
+        user_factory,
         user_upgrades_factory,
     ):
         """
