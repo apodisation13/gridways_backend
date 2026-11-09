@@ -8,15 +8,6 @@ from services.api.app.dependencies import get_inventory_service
 router = APIRouter()
 
 
-@router.get("/user-inventory/{user_id}")
-async def get_user_inventory(
-    _=Depends(auth_dependencies.validate_user),
-    service: InventoryService = Depends(get_inventory_service),
-    user_id: int = Path(..., gt=0),
-) -> dict:
-    return await service.get_inventory(user_id=user_id)
-
-
 @router.patch("/user-inventory/{user_id}")
 async def change_user_upgrades(
     patch_inventory_request: PatchInventoryRequest,

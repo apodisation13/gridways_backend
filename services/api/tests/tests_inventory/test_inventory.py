@@ -8,54 +8,6 @@ class TestUserInventoryAPI:
     endpoint = "user-inventory/{user_id}"
 
     @pytest.mark.asyncio
-    async def test_get_non_existing_inventory(
-        self,
-        # service fixtures
-        client: AsyncClient,
-        user_login_fixture,
-    ):
-        """
-        Тут у юзера еще нет сохраненного инвентаря, и мы заинзертим ему новый (дефолтный пустой список)
-        """
-        user_id = user_login_fixture["id"]
-        access_token = user_login_fixture["token"]["access_token"]
-
-        response = await client.get(
-            self.endpoint.format(user_id=user_id),
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-
-        response_json = response.json()
-        assert response.status_code == 200
-        assert response_json == {"slots": []}
-
-    @pytest.mark.asyncio
-    async def test_get_existing_inventory(
-        self,
-        # service fixtures
-        client: AsyncClient,
-        user_login_fixture,
-        # fixtures for test
-        user_inventory_factory,
-    ):
-        user_id = user_login_fixture["id"]
-        access_token = user_login_fixture["token"]["access_token"]
-
-        await user_inventory_factory(
-            id=user_id,
-            data={"slots": [ResourceType.FIRST_AID_KITS, ResourceType.MEGA_BOMBS]},
-        )
-
-        response = await client.get(
-            self.endpoint.format(user_id=user_id),
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-
-        response_json = response.json()
-        assert response.status_code == 200
-        assert response_json == {"slots": [ResourceType.FIRST_AID_KITS, ResourceType.MEGA_BOMBS]}
-
-    @pytest.mark.asyncio
     async def test_change_inventory_success(
         self,
         # service fixtures

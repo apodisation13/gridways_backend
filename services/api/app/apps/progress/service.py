@@ -13,6 +13,8 @@ from lib.utils.schemas.game import (
     ResourceType,
 )
 from services.api.app.apps.game_data.logic import game_const as game_const_logic
+from services.api.app.apps.inventory import logic as user_inventory_logic
+from services.api.app.apps.preferences import logic as user_preferences_logic
 from services.api.app.apps.progress import logic
 from services.api.app.apps.progress.schemas import (
     CardCraftBonusResponse,
@@ -26,6 +28,7 @@ from services.api.app.apps.progress.schemas import (
     UserProgressResponse,
     UserResources,
 )
+from services.api.app.apps.upgrades import logic as user_upgrades_logic
 from services.api.app.config import Config
 from services.api.app.exceptions.exceptions import (
     CraftMillCardProcessError,
@@ -122,12 +125,30 @@ class UserProgressService:
                 user_id=user_id,
             )
 
+            user_inventory = await user_inventory_logic.get_user_inventory(
+                connection=connection,
+                user_id=user_id,
+            )
+
+            user_preferences = await user_preferences_logic.get_user_preferences(
+                connection=connection,
+                user_id=user_id,
+            )
+
+            user_upgrades = await user_upgrades_logic.get_user_upgrades(
+                connection=connection,
+                user_id=user_id,
+            )
+
         return UserProgressResponse(
             user_resources=user_resources,
             user_cards=user_cards,
             user_leaders=user_leaders,
             user_decks=user_decks,
             user_seasons=user_seasons,
+            user_inventory=user_inventory,
+            user_preferences=user_preferences,
+            user_upgrades=user_upgrades,
         )
 
     async def create_user_deck(
