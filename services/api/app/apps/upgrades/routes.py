@@ -8,15 +8,6 @@ from services.api.app.dependencies import get_upgrades_service
 router = APIRouter()
 
 
-@router.get("/user-upgrades/{user_id}")
-async def get_user_upgrades(
-    _=Depends(auth_dependencies.validate_user),
-    service: UpgradesService = Depends(get_upgrades_service),
-    user_id: int = Path(..., gt=0),
-) -> dict:
-    return await service.get_user_upgrades(user_id=user_id)
-
-
 @router.post("/user-upgrades/{user_id}")
 async def perform_user_upgrades(
     post_upgrade_request: PostUpgradeRequest,

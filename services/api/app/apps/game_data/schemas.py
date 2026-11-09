@@ -13,14 +13,6 @@ class PassiveAbility(Base):
     description: str | None
 
 
-class Deck(Base):
-    id: int
-    name: str
-    leader_id: int
-    cards: list[int]
-    health: int
-
-
 class EnemyLeaderAbility(Base):
     name: str | None
     description: str | None
@@ -223,9 +215,10 @@ class Season(Base):
     children: list[SeasonRelatedSeason]
 
 
-class CardsResponse(Base):
+class GameDataResponse(Base):
     cards: list[Card]
     leaders: list[Leader]
     enemy_leaders: dict[int, EnemyLeader]
     enemies: dict[int, Enemy]
     seasons: dict[int, Season]
+    game_const: dict

@@ -2,7 +2,7 @@ import logging
 
 from lib.utils.db.pool import Database
 from lib.utils.schemas.game import ResourceType, UpgradeSubtype, UpgradeType
-from services.api.app.apps.game_const import logic as game_const_logic
+from services.api.app.apps.game_data.logic import game_const as game_const_logic
 from services.api.app.config import Config
 from services.api.app.exceptions.exceptions import PatchInventoryProcessError
 
@@ -18,41 +18,6 @@ class InventoryService:
     ):
         self.db_pool = db_pool
         self.config = config
-
-    async def get_inventory(
-        self,
-        user_id: int,
-    ) -> dict:
-        async with self.db_pool.connection() as connection:
-            inventory: dict | None = await connection.fetchval(
-                """
-                    SELECT
-                        user_inventory.data::jsonb
-                    FROM
-                        user_inventory
-                    WHERE user_inventory.id = $1
-                """,
-                user_id,
-            )
-
-            if not inventory:
-                logger.info("User %s inventory not found, gotta insert new", user_id)
-                inventory = await connection.fetchval(
-                    """
-                        INSERT INTO user_inventory
-                        (
-                            id,
-                            data
-                        )
-                        VALUES ($1, $2)
-                        RETURNING
-                            data::jsonb
-                    """,
-                    user_id,
-                    {"slots": []},
-                )
-
-        return inventory
 
     async def change_inventory(
         self,

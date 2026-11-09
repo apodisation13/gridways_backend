@@ -1,6 +1,8 @@
 import pytest
 
 from httpx import AsyncClient
+from lib.utils.schemas.game import DEFAULT_USER_UPGRADES
+from services.api.app.apps.preferences.schemas import DEFAULT_PREFERENCES
 
 
 class TestGetUserProgressAPI:
@@ -21,14 +23,7 @@ class TestGetUserProgressAPI:
         user_card_factory,
         user_leader_factory,
     ):
-        """
-        Базовая фикстура добавила уже 3 разных уровня
-        У юзера открыт уровень id=4
-        У этого уровня нет связанных уровней (level_related_levels)
-        Соответственно если юзер проходит этот уровень, то ему мы поставим finished
-        И всё, открывать новые не надо, их ведь нет
-        Если уровень УЖЕ пройден, ничего страшного, так и останется
-        """
+        """Прогресс включает инвентарь, настройки и прокачки пользователя."""
         user_id = user_login_fixture["id"]
         access_token = user_login_fixture["token"]["access_token"]
 
@@ -56,5 +51,18 @@ class TestGetUserProgressAPI:
             headers={"Authorization": f"Bearer {access_token}"},
         )
 
+        assert response.status_code == 200
         response_json = response.json()
-        print(response_json)
+        assert set(response_json) == {
+            "user_resources",
+            "user_cards",
+            "user_leaders",
+            "user_decks",
+            "user_seasons",
+            "user_inventory",
+            "user_preferences",
+            "user_upgrades",
+        }
+        assert response_json["user_inventory"] == {"slots": []}
+        assert response_json["user_preferences"] == {"data": DEFAULT_PREFERENCES}
+        assert response_json["user_upgrades"] == DEFAULT_USER_UPGRADES

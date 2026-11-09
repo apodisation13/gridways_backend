@@ -2,8 +2,7 @@ from fastapi import Depends, FastAPI
 from lib.utils.clients.ckassa import CKassaClient
 from lib.utils.db.pool import Database
 from services.api.app.apps.auth.service import AuthService
-from services.api.app.apps.cards.service import CardsService
-from services.api.app.apps.game_const.service import GameConstService
+from services.api.app.apps.game_data.service import GameDataService
 from services.api.app.apps.inventory.service import InventoryService
 from services.api.app.apps.news.service import NewsService
 from services.api.app.apps.preferences.service import PreferencesService
@@ -47,11 +46,11 @@ async def get_auth_service(
     )
 
 
-async def get_cards_service(
+async def get_game_data_service(
     db_pool: Database = Depends(get_db),
     config: Config = Depends(get_config),
-) -> CardsService:
-    return CardsService(
+) -> GameDataService:
+    return GameDataService(
         db_pool=db_pool,
         config=config,
     )
@@ -62,16 +61,6 @@ async def get_news_service(
     config: Config = Depends(get_config),
 ) -> NewsService:
     return NewsService(
-        db_pool=db_pool,
-        config=config,
-    )
-
-
-async def get_game_const_service(
-    db_pool: Database = Depends(get_db),
-    config: Config = Depends(get_config),
-) -> GameConstService:
-    return GameConstService(
         db_pool=db_pool,
         config=config,
     )

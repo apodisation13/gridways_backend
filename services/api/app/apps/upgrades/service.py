@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from lib.utils.db.pool import Database
 from lib.utils.schemas.game import DEFAULT_USER_UPGRADES, UpgradeSubtype, UpgradeType
-from services.api.app.apps.game_const import logic as game_const_logic
+from services.api.app.apps.game_data.logic import game_const as game_const_logic
 from services.api.app.apps.progress import logic as progress_logic
 from services.api.app.apps.upgrades.schemas import PostUpgradeResponse
 from services.api.app.config import Config
@@ -25,40 +25,6 @@ class UpgradesService:
     ):
         self.db_pool = db_pool
         self.config = config
-
-    async def get_user_upgrades(
-        self,
-        user_id: int,
-    ) -> dict:
-        async with self.db_pool.connection() as connection:
-            upgrades: dict | None = await connection.fetchval(
-                """
-                    SELECT
-                        user_upgrades.data::jsonb
-                    FROM
-                        user_upgrades
-                    WHERE user_upgrades.id = $1
-                """,
-                user_id,
-            )
-
-            if not upgrades:
-                logger.info("User %s upgrades not found, gotta insert new", user_id)
-                upgrades = await connection.fetchval(
-                    """
-                        INSERT INTO user_upgrades
-                        (
-                            id,
-                            data
-                        )
-                        VALUES ($1, $2)
-                        RETURNING data::jsonb
-                    """,
-                    user_id,
-                    DEFAULT_USER_UPGRADES,
-                )
-
-        return upgrades
 
     async def post_user_upgrade(
         self,

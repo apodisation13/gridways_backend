@@ -3,11 +3,11 @@ import logging
 import asyncpg
 
 from lib.utils.schemas.game import ResourceType, UpgradeSubtype, UpgradeType
-from services.api.app.apps.cards.schemas import Deck
-from services.api.app.apps.game_const import logic as game_const_logic
+from services.api.app.apps.game_data.logic import game_const as game_const_logic
 from services.api.app.apps.progress.schemas import (
     CompletionRewards,
     CreateDeckRequest,
+    Deck,
     UserCard,
     UserDeck,
     UserLeader,
