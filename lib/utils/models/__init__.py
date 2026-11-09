@@ -1,5 +1,6 @@
 from .base import Base, BaseModel, TimestampMixin
 from .events import Event, EventLog
+from .game.achievements import AchievementSet, UserAchievements
 from .game.cards import Ability, Card, CardDeck, Deck, Leader, PassiveAbility, Type
 from .game.core import Color, Faction, GameConstants
 from .game.enemies import Deathwish, Enemy, EnemyLeader, EnemyLeaderAbility, EnemyPassiveAbility, Move
@@ -17,6 +18,7 @@ from .users import User
 
 __all__ = [
     "Ability",
+    "AchievementSet",
     "Base",
     "BaseModel",
     "Card",
@@ -48,6 +50,7 @@ __all__ = [
     "TimestampMixin",
     "Type",
     "User",
+    "UserAchievements",
     "UserCard",
     "UserDeck",
     "UserInventory",
