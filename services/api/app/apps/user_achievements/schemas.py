@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 
 from lib.utils.schemas import Base
 from lib.utils.schemas.game import ResourceType
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, JsonValue, StrictBool, StrictFloat, StrictInt, StrictStr
 from services.api.app.apps.progress.schemas import UserResources
 
 
@@ -18,18 +18,8 @@ PositiveAmount = (
 
 
 class AchievementEventType(StrEnum):
-    CARD_PLAYED = "card.played"
-    LEADER_PLAYED = "leader.played"
+    ACTION_PLAYED = "action.played"
     RESOURCE_SPENT = "resource.spent"
-
-
-class CardPlayedData(Base):
-    card_id: PositiveId = Field(alias="cardId")
-    rarity: Literal["bronze", "silver", "gold"]
-
-
-class LeaderPlayedData(Base):
-    leader_id: PositiveId = Field(alias="leaderId")
 
 
 class ResourceSpentData(Base):
@@ -37,14 +27,14 @@ class ResourceSpentData(Base):
     amount: PositiveAmount
 
 
-class CardPlayedEvent(Base):
-    type: Literal[AchievementEventType.CARD_PLAYED]
-    data: CardPlayedData
+class ActionPlayedData(Base):
+    # Весь снимок карты/лидера, включая вложенные поля и массивы.
+    actor: dict[str, JsonValue]
 
 
-class LeaderPlayedEvent(Base):
-    type: Literal[AchievementEventType.LEADER_PLAYED]
-    data: LeaderPlayedData
+class ActionPlayedEvent(Base):
+    type: Literal[AchievementEventType.ACTION_PLAYED]
+    data: ActionPlayedData
 
 
 class ResourceSpentEvent(Base):
@@ -53,7 +43,7 @@ class ResourceSpentEvent(Base):
 
 
 AchievementEvent = Annotated[
-    CardPlayedEvent | LeaderPlayedEvent | ResourceSpentEvent,
+    ActionPlayedEvent | ResourceSpentEvent,
     Field(discriminator="type"),
 ]
 
@@ -85,7 +75,38 @@ class CountCounter(Base):
 
 class SumCounter(Base):
     type: Literal["sum"]
-    field: Literal["amount"]
+    field: Annotated[str, Field(min_length=1)]
+
+
+# Новые поля карты не требуют новых моделей. Типизируем только язык условий.
+FilterScalar = StrictStr | StrictBool | StrictInt | Annotated[StrictFloat, Field(allow_inf_nan=False)] | None
+FilterNumber = StrictInt | Annotated[StrictFloat, Field(allow_inf_nan=False)]
+
+
+class EqualityFilter(Base):
+    type: Literal["eq", "ne"]
+    value: FilterScalar
+
+
+class ComparisonFilter(Base):
+    type: Literal["gt", "gte", "lt", "lte"]
+    value: FilterNumber
+
+
+class InFilter(Base):
+    type: Literal["in"]
+    value: list[FilterScalar]
+
+
+class ExistsFilter(Base):
+    type: Literal["exists"]
+    value: StrictBool
+
+
+FilterCondition = Annotated[
+    EqualityFilter | ComparisonFilter | InFilter | ExistsFilter,
+    Field(discriminator="type"),
+]
 
 
 class AchievementDefinition(Base):
@@ -95,5 +116,5 @@ class AchievementDefinition(Base):
     event: AchievementEventType
     target: PositiveAmount
     counter: Annotated[CountCounter | SumCounter, Field(discriminator="type")]
-    filters: dict = Field(default_factory=dict)
+    filters: dict[str, FilterScalar | FilterCondition] = Field(default_factory=dict)
     rewards: AchievementRewards

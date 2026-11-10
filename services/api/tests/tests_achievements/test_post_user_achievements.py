@@ -13,20 +13,20 @@ from services.api.app.dependencies import get_db
 from services.api.tests.factories.factories import GameConstantsFactory
 
 
-def task(key: str, target: int, event: str = "card.played") -> dict:
+def task(key: str, target: int, event: str = "action.played") -> dict:
     return {
         "id": key,
         "event": event,
         "target": target,
         "counter": {"type": "sum", "field": "amount"} if event == "resource.spent" else {"type": "count"},
-        "filters": {"resource": "money"} if event == "resource.spent" else {"rarity": "bronze"},
+        "filters": {"resource": "money"} if event == "resource.spent" else {"actor.color": "Bronze"},
         "rewards": {"resources": {"money": 10}},
         "title": "Test achievement",
         "ordering": 10,
     }
 
 
-CARD = {"type": "card.played", "data": {"cardId": 123, "rarity": "bronze"}}
+CARD = {"type": "action.played", "data": {"actor": {"faction": "Neutral", "id": 123, "color": "Bronze"}}}
 
 
 @pytest_asyncio.fixture
@@ -135,8 +135,8 @@ class TestPostUserAchievements:
         user_id, headers = achievements_setup
 
         events = [
-            {"type": "leader.played", "data": {"leaderId": 7}},
-            {"type": "card.played", "data": {"cardId": 2, "rarity": "silver"}},
+            {"type": "action.played", "data": {"actor": {"id": 7}}},
+            {"type": "action.played", "data": {"actor": {"faction": "Neutral", "id": 2, "color": "Silver"}}},
             {"type": "resource.spent", "data": {"resource": "money", "amount": 40.5}},
             {"type": "resource.spent", "data": {"resource": "money", "amount": 60}},
         ]
@@ -158,9 +158,9 @@ class TestPostUserAchievements:
         "invalid",
         [
             {"type": "unknown", "data": {}},
-            {"type": "card.played", "data": {"cardId": True, "rarity": "bronze"}},
-            {"type": "card.played", "data": {"cardId": 1, "rarity": "Bronze"}},
-            {"type": "leader.played", "data": {}},
+            {"type": "action.played", "data": {}},
+            {"type": "action.played", "data": {"actor": []}},
+            {"type": "action.played", "data": {"actor": None}},
             {"type": "resource.spent", "data": {"resource": "unknown", "amount": 1}},
             {"type": "resource.spent", "data": {"resource": "money", "amount": -1}},
             {"type": "resource.spent", "data": {"resource": "money", "amount": "10"}},

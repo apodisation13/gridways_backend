@@ -1,9 +1,9 @@
 from datetime import UTC, datetime
 
+from services.api.app.apps.user_achievements.logic.filters import get_field, is_number, matches_filters
 from services.api.app.apps.user_achievements.schemas import (
     AchievementDefinition,
     AchievementEvent,
-    AchievementEventType,
     GrantedAchievementReward,
     SumCounter,
 )
@@ -27,12 +27,7 @@ def get_permanent_definitions(
             if definition.id != key or key in seen:
                 raise ValueError(f"Invalid or duplicate achievement ID: {key}")
 
-            # 5. Суммировать amount пока можно только у resource.spent
-            # У событий применения карты и лидера такого поля нет
-            if isinstance(definition.counter, SumCounter) and definition.event != AchievementEventType.RESOURCE_SPENT:
-                raise ValueError(f"Sum counter requires resource.spent: {key}")
-
-            # 6. Запоминаем id и добавляем задание в общий список, уже без категорий
+            # Запоминаем id и добавляем задание в список без категорий.
             seen.add(key)
             definitions.append(definition)
 
@@ -51,7 +46,7 @@ def apply_events(
     # 1. Начинаем перебирать список пришедших с фронта событий
     for event in events:
         # 2. Превращаем data из Pydantic-модели в обычный словарь
-        # by_alias=True сохраняет названия с фронта: cardId, leaderId
+        # actor остаётся полным снимком, не привязанным к заранее перечисленным полям.
         data = event.data.model_dump(mode="json", by_alias=True)
 
         # 3. Перебираем ВЕСЬ плоский список ВСЕХ заданий
@@ -60,10 +55,9 @@ def apply_events(
             if definition.event != event.type:
                 continue
 
-            # 5. Все фильтры задания должны совпасть с данными события
-            # Например, filters={"rarity": "bronze"} подходит только бронзовой карте
-            # Если хотя бы одного поля нет или значение другое — пропускаем задание
-            if any(key not in data or data[key] != value for key, value in definition.filters.items()):
+            # Пути и операторы одинаковы с фронтом: actor.color, actor.data.damage и т.д.
+            filters = definition.model_dump(mode="json")["filters"]
+            if not matches_filters(data, filters):
                 continue
 
             # 6. Берем раздел permanent из прогресса юзера
@@ -81,9 +75,11 @@ def apply_events(
             if state.get("reward_granted_at") is not None:
                 continue
 
-            # 9. Для sum берем число из поля counter.field (сейчас это amount)
+            # 9. sum может брать любое числовое поле, в том числе вложенное.
             # Для count просто прибавляем 1 за одно подходящее событие
-            increment = data[definition.counter.field] if isinstance(definition.counter, SumCounter) else 1
+            increment = get_field(data, definition.counter.field) if isinstance(definition.counter, SumCounter) else 1
+            if not is_number(increment) or increment <= 0:
+                continue
 
             # 10. Увеличиваем прогресс, но не выше цели: для задания на 10 карт максимум будет 10
             state["value"] = min(definition.target, state["value"] + increment)
