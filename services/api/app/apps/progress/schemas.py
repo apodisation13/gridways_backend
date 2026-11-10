@@ -111,6 +111,7 @@ class UserProgressResponse(Base):
     user_inventory: dict
     user_preferences: UserPreferencesResponse
     user_upgrades: dict
+    user_achievements: dict
 
 
 class CreateDeckRequest(Base):

@@ -1,5 +1,6 @@
 from lib.utils.models import (
     Ability,
+    AchievementSet,
     Card,
     CardDeck,
     Color,
@@ -22,6 +23,7 @@ from lib.utils.models import (
     Season,
     SeasonRelatedSeasons,
     Type,
+    UserAchievements,
     UserCard,
     UserDeck,
     UserInventory,
@@ -36,6 +38,7 @@ from lib.utils.schemas.game import LevelDifficulty
 import pytest_asyncio
 from services.api.tests.factories.factories import (
     AbilityFactory,
+    AchievementSetFactory,
     CardDeckFactory,
     CardFactory,
     ColorFactory,
@@ -58,6 +61,7 @@ from services.api.tests.factories.factories import (
     SeasonFactory,
     SeasonRelatedSeasonsFactory,
     TypeFactory,
+    UserAchievementsFactory,
     UserCardFactory,
     UserDeckFactory,
     UserInventoryFactory,
@@ -326,6 +330,22 @@ def user_upgrades_factory(db_connection):
 def user_inventory_factory(db_connection):
     async def factory(**kwargs) -> UserInventory:
         return await UserInventoryFactory.create_in_db(conn=db_connection, **kwargs)
+
+    return factory
+
+
+@pytest_asyncio.fixture
+def achievement_set_factory(db_connection):
+    async def factory(**kwargs) -> AchievementSet:
+        return await AchievementSetFactory.create_in_db(conn=db_connection, **kwargs)
+
+    return factory
+
+
+@pytest_asyncio.fixture
+def user_achievements_factory(db_connection):
+    async def factory(**kwargs) -> UserAchievements:
+        return await UserAchievementsFactory.create_in_db(conn=db_connection, **kwargs)
 
     return factory
 

@@ -1,6 +1,7 @@
 from fastapi import Depends, FastAPI
 from lib.utils.clients.ckassa import CKassaClient
 from lib.utils.db.pool import Database
+from services.api.app.apps.achievements.service import AchievementsService
 from services.api.app.apps.auth.service import AuthService
 from services.api.app.apps.game_data.service import GameDataService
 from services.api.app.apps.inventory.service import InventoryService
@@ -41,6 +42,16 @@ async def get_auth_service(
     config: Config = Depends(get_config),
 ) -> AuthService:
     return AuthService(
+        db_pool=db_pool,
+        config=config,
+    )
+
+
+async def get_achievements_service(
+    db_pool: Database = Depends(get_db),
+    config: Config = Depends(get_config),
+) -> AchievementsService:
+    return AchievementsService(
         db_pool=db_pool,
         config=config,
     )

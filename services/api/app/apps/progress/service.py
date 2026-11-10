@@ -12,6 +12,7 @@ from lib.utils.schemas.game import (
     ResourceTransitionActionType,
     ResourceType,
 )
+from services.api.app.apps.achievements import logic as achievements_logic
 from services.api.app.apps.game_data.logic import game_const as game_const_logic
 from services.api.app.apps.inventory import logic as user_inventory_logic
 from services.api.app.apps.preferences import logic as user_preferences_logic
@@ -140,6 +141,11 @@ class UserProgressService:
                 user_id=user_id,
             )
 
+            user_achievements = await achievements_logic.get_user_achievements(
+                connection=connection,
+                user_id=user_id,
+            )
+
         return UserProgressResponse(
             user_resources=user_resources,
             user_cards=user_cards,
@@ -149,6 +155,7 @@ class UserProgressService:
             user_inventory=user_inventory,
             user_preferences=user_preferences,
             user_upgrades=user_upgrades,
+            user_achievements=user_achievements,
         )
 
     async def create_user_deck(
