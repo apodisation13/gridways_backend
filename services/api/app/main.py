@@ -6,7 +6,7 @@ from lib.utils.clients.ckassa import CKassaClient
 from lib.utils.db.pool import Database
 from lib.utils.elk.elastic_logger import ElasticLoggerManager
 from lib.utils.elk.elastic_tracer import ElasticTracerManager
-from services.api.app.apps.achievements.routes import router as achievements_router
+from services.api.app.apps.user_achievements.routes import router as achievements_router
 from services.api.app.apps.api_docs.routes import router as swagger_router
 from services.api.app.apps.auth.routes import router as users_router
 from services.api.app.apps.game_data.routes import router as game_data_router
@@ -80,7 +80,7 @@ api_v1_router.include_router(swagger_router, prefix="", tags=["swagger"])
 api_v1_router.include_router(users_router, prefix="/users", tags=["accounts"])
 api_v1_router.include_router(news_router, prefix="/news", tags=["news"])
 api_v1_router.include_router(game_data_router, prefix="/game-data", tags=["game_data"])
-api_v1_router.include_router(achievements_router, prefix="/achievements", tags=["achievements"])
+api_v1_router.include_router(achievements_router, prefix="", tags=["achievements"])
 api_v1_router.include_router(progress_router, prefix="/user-progress", tags=["progress"])
 api_v1_router.include_router(preferences_router, prefix="/preferences", tags=["preferences"])
 api_v1_router.include_router(stats_router, prefix="/statistics", tags=["statistics"])

@@ -1,6 +1,6 @@
 import pytest
 
-from services.api.app.apps.achievements import logic
+from services.api.app.apps.user_achievements import logic
 
 
 class TestGetUserAchievements:
