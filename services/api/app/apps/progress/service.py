@@ -12,7 +12,6 @@ from lib.utils.schemas.game import (
     ResourceTransitionActionType,
     ResourceType,
 )
-from services.api.app.apps.user_achievements import logic as achievements_logic
 from services.api.app.apps.game_data.logic import game_const as game_const_logic
 from services.api.app.apps.inventory import logic as user_inventory_logic
 from services.api.app.apps.preferences import logic as user_preferences_logic
@@ -30,6 +29,7 @@ from services.api.app.apps.progress.schemas import (
     UserResources,
 )
 from services.api.app.apps.upgrades import logic as user_upgrades_logic
+from services.api.app.apps.user_achievements import logic as achievements_logic
 from services.api.app.config import Config
 from services.api.app.exceptions.exceptions import (
     CraftMillCardProcessError,

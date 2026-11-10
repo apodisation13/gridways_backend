@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Path
+from services.api.app.apps.auth import dependencies as auth_dependencies
 from services.api.app.apps.user_achievements.schemas import AchievementEventsRequest, AchievementEventsResponse
 from services.api.app.apps.user_achievements.service import AchievementsService
-from services.api.app.apps.auth import dependencies as auth_dependencies
 from services.api.app.dependencies import get_achievements_service
 
 

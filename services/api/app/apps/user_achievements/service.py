@@ -1,11 +1,13 @@
 from lib.utils.db.pool import Database
-from services.api.app.apps.user_achievements import logic
-from services.api.app.apps.user_achievements.logic.events import apply_events, get_permanent_definitions
-from services.api.app.apps.user_achievements.schemas import AchievementEvent, AchievementEventsResponse, \
-    AchievementDefinition
 from services.api.app.apps.game_data.logic import game_const as game_const_logic
 from services.api.app.apps.progress import logic as progress_logic
 from services.api.app.apps.upgrades import logic as upgrades_logic
+from services.api.app.apps.user_achievements.logic.events import apply_events, get_permanent_definitions
+from services.api.app.apps.user_achievements.schemas import (
+    AchievementDefinition,
+    AchievementEvent,
+    AchievementEventsResponse,
+)
 from services.api.app.config import Config
 
 

@@ -1,7 +1,6 @@
 from fastapi import Depends, FastAPI
 from lib.utils.clients.ckassa import CKassaClient
 from lib.utils.db.pool import Database
-from services.api.app.apps.achievements.service import AchievementsService
 from services.api.app.apps.auth.service import AuthService
 from services.api.app.apps.game_data.service import GameDataService
 from services.api.app.apps.inventory.service import InventoryService
@@ -11,6 +10,7 @@ from services.api.app.apps.progress.service import UserProgressService
 from services.api.app.apps.purchases.service import PurchasesService
 from services.api.app.apps.stats.service import StatsService
 from services.api.app.apps.upgrades.service import UpgradesService
+from services.api.app.apps.user_achievements.service import AchievementsService
 from services.api.app.config import Config
 
 
