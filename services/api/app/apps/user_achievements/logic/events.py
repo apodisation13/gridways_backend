@@ -4,6 +4,8 @@ from services.api.app.apps.user_achievements.logic.filters import get_field, is_
 from services.api.app.apps.user_achievements.schemas import (
     AchievementDefinition,
     AchievementEvent,
+    AchievementEventType,
+    CurrentCounter,
     GrantedAchievementReward,
     SumCounter,
 )
@@ -38,6 +40,7 @@ def apply_events(
     progress: dict,
     events: list[AchievementEvent],
     definitions: list[AchievementDefinition],
+    resources: dict | None = None,
 ) -> list[GrantedAchievementReward]:
     rewards = []
     # Одно время для всех заданий, которые выполнились в этой пачке событий
@@ -48,10 +51,15 @@ def apply_events(
         # 2. Превращаем data из Pydantic-модели в обычный словарь
         # actor остаётся полным снимком, не привязанным к заранее перечисленным полям.
         data = event.data.model_dump(mode="json", by_alias=True)
+        if event.type == AchievementEventType.RESOURCES_CHECKED:
+            data = {"resources": resources or {}}
 
         # 3. Перебираем ВЕСЬ плоский список ВСЕХ заданий
         for definition in definitions:
             # 4. Если задание ждет другое событие — пропускаем его
+            is_current = isinstance(definition.counter, CurrentCounter)
+            if is_current and event.type != AchievementEventType.RESOURCES_CHECKED:
+                continue
             if definition.event != event.type:
                 continue
 
@@ -77,12 +85,16 @@ def apply_events(
 
             # 9. sum может брать любое числовое поле, в том числе вложенное.
             # Для count просто прибавляем 1 за одно подходящее событие
-            increment = get_field(data, definition.counter.field) if isinstance(definition.counter, SumCounter) else 1
-            if not is_number(increment) or increment <= 0:
+            increment = (
+                get_field(data, definition.counter.field)
+                if isinstance(definition.counter, (SumCounter, CurrentCounter))
+                else 1
+            )
+            if not is_number(increment) or (increment < 0 if is_current else increment <= 0):
                 continue
 
             # 10. Увеличиваем прогресс, но не выше цели: для задания на 10 карт максимум будет 10
-            state["value"] = min(definition.target, state["value"] + increment)
+            state["value"] = min(definition.target, increment if is_current else state["value"] + increment)
 
             # 11. Если цель еще не достигнута — счетчик уже увеличили, а награду пока не выдаем
             if state["value"] < definition.target:

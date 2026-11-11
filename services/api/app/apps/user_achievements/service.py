@@ -6,6 +6,7 @@ from services.api.app.apps.user_achievements.logic.events import apply_events, g
 from services.api.app.apps.user_achievements.schemas import (
     AchievementDefinition,
     AchievementEvent,
+    AchievementEventType,
     AchievementEventsResponse,
 )
 from services.api.app.config import Config
@@ -40,7 +41,13 @@ class AchievementsService:
             )
 
             # 4. Применяем все события
-            rewards = apply_events(progress, events, definitions)
+            resources = None
+            if any(event.type == AchievementEventType.RESOURCES_CHECKED for event in events):
+                # Баланс стабилен до конца проверки и выдачи наград в этой транзакции.
+                await connection.fetchval("SELECT id FROM user_resources WHERE id = $1 FOR UPDATE", user_id)
+                balance = await progress_logic.get_user_resources(user_id, connection)
+                resources = balance.model_dump(mode="json")
+            rewards = apply_events(progress, events, definitions, resources)
 
             # 5. Если награды нужно - начисляем их тут.
             user_resources = None

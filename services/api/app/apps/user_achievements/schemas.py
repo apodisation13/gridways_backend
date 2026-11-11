@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 
 from lib.utils.schemas import Base
 from lib.utils.schemas.game import ResourceType
-from pydantic import ConfigDict, Field, JsonValue, StrictBool, StrictFloat, StrictInt, StrictStr
+from pydantic import ConfigDict, Field, JsonValue, StrictBool, StrictFloat, StrictInt, StrictStr, model_validator
 from services.api.app.apps.progress.schemas import UserResources
 
 
@@ -26,6 +26,18 @@ class AchievementEventType(StrEnum):
     # any resource opened - keys, kegs/big kegs, chests
     RESOURCE_OPENED = "resource.opened"
     RESOURCE_TRANSFORMED = "resource.transformed"
+
+    RESOURCES_CHECKED = "resources.checked"
+
+
+class ResourcesCheckedData(Base):
+    # Клиент передаёт только сигнал, баланс берём из БД.
+    model_config = ConfigDict(extra="forbid")
+
+
+class ResourcesCheckedEvent(Base):
+    type: Literal[AchievementEventType.RESOURCES_CHECKED]
+    data: ResourcesCheckedData
 
 
 class ResourceAmountsData(Base):
@@ -78,7 +90,12 @@ class ResourceTransformedEvent(Base):
 
 
 AchievementEvent = Annotated[
-    ActionPlayedEvent | ResourceSpentEvent | ResourceGainedEvent | ResourceOpenedEvent | ResourceTransformedEvent,
+    ResourcesCheckedEvent
+    | ActionPlayedEvent
+    | ResourceSpentEvent
+    | ResourceGainedEvent
+    | ResourceOpenedEvent
+    | ResourceTransformedEvent,
     Field(discriminator="type"),
 ]
 
@@ -106,6 +123,11 @@ class AchievementEventsResponse(Base):
 
 class CountCounter(Base):
     type: Literal["count"]
+
+
+class CurrentCounter(Base):
+    type: Literal["current"]
+    field: Annotated[str, Field(pattern=r"^resources\.[a-z_]+$")]
 
 
 class SumCounter(Base):
@@ -150,6 +172,16 @@ class AchievementDefinition(Base):
     id: str
     event: AchievementEventType
     target: PositiveAmount
-    counter: Annotated[CountCounter | SumCounter, Field(discriminator="type")]
+    counter: Annotated[CountCounter | SumCounter | CurrentCounter, Field(discriminator="type")]
     filters: dict[str, FilterScalar | FilterCondition] = Field(default_factory=dict)
     rewards: AchievementRewards
+
+    @model_validator(mode="after")
+    def validate_current_counter(self) -> "AchievementDefinition":
+        # Сигнал проверки баланса не должен становиться обычным count/sum-событием.
+        is_current = isinstance(self.counter, CurrentCounter)
+        if is_current != (self.event == AchievementEventType.RESOURCES_CHECKED):
+            raise ValueError("current counter requires resources.checked event and vice versa")
+        if is_current:
+            ResourceType(self.counter.field.removeprefix("resources."))
+        return self
