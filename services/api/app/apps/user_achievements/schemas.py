@@ -23,6 +23,8 @@ class AchievementEventType(StrEnum):
     # any resource spent or gained
     RESOURCE_SPENT = "resource.spent"
     RESOURCE_GAINED = "resource.gained"
+    # any resource opened - keys, kegs/big kegs, chests
+    RESOURCE_OPENED = "resource.opened"
 
 
 class ResourceAmountsData(Base):
@@ -50,8 +52,17 @@ class ResourceGainedEvent(Base):
     data: ResourceAmountsData
 
 
+class ResourceOpenedData(Base):
+    resource: ResourceType
+
+
+class ResourceOpenedEvent(Base):
+    type: Literal[AchievementEventType.RESOURCE_OPENED]
+    data: ResourceOpenedData
+
+
 AchievementEvent = Annotated[
-    ActionPlayedEvent | ResourceSpentEvent | ResourceGainedEvent,
+    ActionPlayedEvent | ResourceSpentEvent | ResourceGainedEvent | ResourceOpenedEvent,
     Field(discriminator="type"),
 ]
 
