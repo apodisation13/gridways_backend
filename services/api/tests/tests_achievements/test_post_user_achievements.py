@@ -18,8 +18,8 @@ def task(key: str, target: int, event: str = "action.played") -> dict:
         "id": key,
         "event": event,
         "target": target,
-        "counter": {"type": "sum", "field": "amount"} if event == "resource.spent" else {"type": "count"},
-        "filters": {"resource": "money"} if event == "resource.spent" else {"actor.color": "Bronze"},
+        "counter": {"type": "sum", "field": "resources.money"} if event == "resource.spent" else {"type": "count"},
+        "filters": {} if event == "resource.spent" else {"actor.color": "Bronze"},
         "rewards": {"resources": {"money": 10}},
         "title": "Test achievement",
         "ordering": 10,
@@ -137,8 +137,8 @@ class TestPostUserAchievements:
         events = [
             {"type": "action.played", "data": {"actor": {"id": 7}}},
             {"type": "action.played", "data": {"actor": {"faction": "Neutral", "id": 2, "color": "Silver"}}},
-            {"type": "resource.spent", "data": {"resource": "money", "amount": 40.5}},
-            {"type": "resource.spent", "data": {"resource": "money", "amount": 60}},
+            {"type": "resource.spent", "data": {"resources": {"money": 40.5}}},
+            {"type": "resource.spent", "data": {"resources": {"money": 60}}},
         ]
 
         response = await client.post(
@@ -161,10 +161,10 @@ class TestPostUserAchievements:
             {"type": "action.played", "data": {}},
             {"type": "action.played", "data": {"actor": []}},
             {"type": "action.played", "data": {"actor": None}},
-            {"type": "resource.spent", "data": {"resource": "unknown", "amount": 1}},
-            {"type": "resource.spent", "data": {"resource": "money", "amount": -1}},
-            {"type": "resource.spent", "data": {"resource": "money", "amount": "10"}},
-            {"type": "resource.spent", "data": {"resource": "money", "amount": True}},
+            {"type": "resource.spent", "data": {"resources": {"unknown": 1}}},
+            {"type": "resource.spent", "data": {"resources": {"money": -1}}},
+            {"type": "resource.spent", "data": {"resources": {"money": "10"}}},
+            {"type": "resource.spent", "data": {"resources": {"money": True}}},
         ],
     )
     @pytest.mark.asyncio

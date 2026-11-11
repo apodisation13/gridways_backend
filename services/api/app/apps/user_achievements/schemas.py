@@ -18,13 +18,16 @@ PositiveAmount = (
 
 
 class AchievementEventType(StrEnum):
+    # сard or leader played
     ACTION_PLAYED = "action.played"
+    # any resource spent or gained
     RESOURCE_SPENT = "resource.spent"
+    RESOURCE_GAINED = "resource.gained"
 
 
-class ResourceSpentData(Base):
-    resource: ResourceType
-    amount: PositiveAmount
+class ResourceAmountsData(Base):
+    # Фактически потраченные или полученные ресурсы, всегда положительными числами.
+    resources: dict[ResourceType, PositiveAmount]
 
 
 class ActionPlayedData(Base):
@@ -39,11 +42,16 @@ class ActionPlayedEvent(Base):
 
 class ResourceSpentEvent(Base):
     type: Literal[AchievementEventType.RESOURCE_SPENT]
-    data: ResourceSpentData
+    data: ResourceAmountsData
+
+
+class ResourceGainedEvent(Base):
+    type: Literal[AchievementEventType.RESOURCE_GAINED]
+    data: ResourceAmountsData
 
 
 AchievementEvent = Annotated[
-    ActionPlayedEvent | ResourceSpentEvent,
+    ActionPlayedEvent | ResourceSpentEvent | ResourceGainedEvent,
     Field(discriminator="type"),
 ]
 
