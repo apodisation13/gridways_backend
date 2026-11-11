@@ -67,6 +67,9 @@ class ResourceTransformedData(Base):
     resource: ResourceType
     # Количество предметов/единиц ресурса, а не число нажатий: quantity * step.
     amount: PositiveAmount
+    # Стоимость и фактический доход этого обмена; без нулевых значений.
+    spent: dict[ResourceType, PositiveAmount]
+    gained: dict[ResourceType, PositiveAmount]
 
 
 class ResourceTransformedEvent(Base):
