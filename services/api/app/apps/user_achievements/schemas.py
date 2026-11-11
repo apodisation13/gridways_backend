@@ -25,6 +25,7 @@ class AchievementEventType(StrEnum):
     RESOURCE_GAINED = "resource.gained"
     # any resource opened - keys, kegs/big kegs, chests
     RESOURCE_OPENED = "resource.opened"
+    RESOURCE_TRANSFORMED = "resource.transformed"
 
 
 class ResourceAmountsData(Base):
@@ -61,8 +62,20 @@ class ResourceOpenedEvent(Base):
     data: ResourceOpenedData
 
 
+class ResourceTransformedData(Base):
+    action: Literal["buy", "sell", "craft", "mill"]
+    resource: ResourceType
+    # Количество предметов/единиц ресурса, а не число нажатий: quantity * step.
+    amount: PositiveAmount
+
+
+class ResourceTransformedEvent(Base):
+    type: Literal[AchievementEventType.RESOURCE_TRANSFORMED]
+    data: ResourceTransformedData
+
+
 AchievementEvent = Annotated[
-    ActionPlayedEvent | ResourceSpentEvent | ResourceGainedEvent | ResourceOpenedEvent,
+    ActionPlayedEvent | ResourceSpentEvent | ResourceGainedEvent | ResourceOpenedEvent | ResourceTransformedEvent,
     Field(discriminator="type"),
 ]
 
