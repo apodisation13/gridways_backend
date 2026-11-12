@@ -43,6 +43,8 @@ class ResourcesCheckedEvent(Base):
 class ResourceAmountsData(Base):
     # Фактически потраченные или полученные ресурсы, всегда положительными числами.
     resources: dict[ResourceType, PositiveAmount]
+    # Необязательная причина операции для фильтров контрактов.
+    subtype: str | None = None
 
 
 class ActionPlayedData(Base):
