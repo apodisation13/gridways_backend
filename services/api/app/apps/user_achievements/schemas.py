@@ -132,6 +132,11 @@ class CurrentCounter(Base):
     field: Annotated[str, Field(pattern=r"^resources\.[a-z_]+$")]
 
 
+class UniqueCounter(Base):
+    type: Literal["unique"]
+    field: Annotated[str, Field(min_length=1)]
+
+
 class SumCounter(Base):
     type: Literal["sum"]
     field: Annotated[str, Field(min_length=1)]
@@ -174,7 +179,7 @@ class AchievementDefinition(Base):
     id: str
     event: AchievementEventType
     target: PositiveAmount
-    counter: Annotated[CountCounter | SumCounter | CurrentCounter, Field(discriminator="type")]
+    counter: Annotated[CountCounter | SumCounter | CurrentCounter | UniqueCounter, Field(discriminator="type")]
     filters: dict[str, FilterScalar | FilterCondition] = Field(default_factory=dict)
     rewards: AchievementRewards
 
@@ -184,6 +189,8 @@ class AchievementDefinition(Base):
         is_current = isinstance(self.counter, CurrentCounter)
         if is_current != (self.event == AchievementEventType.RESOURCES_CHECKED):
             raise ValueError("current counter requires resources.checked event and vice versa")
+        if isinstance(self.counter, UniqueCounter) and self.target != int(self.target):
+            raise ValueError("unique counter requires an integer target")
         if is_current:
             ResourceType(self.counter.field.removeprefix("resources."))
         return self

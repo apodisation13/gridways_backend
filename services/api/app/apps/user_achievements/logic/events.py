@@ -8,6 +8,7 @@ from services.api.app.apps.user_achievements.schemas import (
     CurrentCounter,
     GrantedAchievementReward,
     SumCounter,
+    UniqueCounter,
 )
 
 
@@ -83,19 +84,29 @@ def apply_events(
             if state.get("reward_granted_at") is not None:
                 continue
 
-            # 9. sum может брать любое числовое поле, в том числе вложенное.
-            # Для count просто прибавляем 1 за одно подходящее событие
-            increment = (
-                get_field(data, definition.counter.field)
-                if isinstance(definition.counter, (SumCounter, CurrentCounter))
-                else 1
-            )
-            if not is_number(increment) or (increment < 0 if is_current else increment <= 0):
-                continue
+            if isinstance(definition.counter, UniqueCounter):
+                item = get_field(data, definition.counter.field)
+                # Только названия и числовые ID; bool/null/объекты не являются ID.
+                if not isinstance(item, str) and not is_number(item):
+                    continue
+                seen = state.setdefault("seen", [])
+                if item in seen:
+                    continue
+                seen.append(item)
+                state["value"] = min(definition.target, len(seen))
+            else:
+                # 9. sum может брать любое числовое поле, в том числе вложенное.
+                # Для count просто прибавляем 1 за одно подходящее событие
+                increment = (
+                    get_field(data, definition.counter.field)
+                    if isinstance(definition.counter, (SumCounter, CurrentCounter))
+                    else 1
+                )
+                if not is_number(increment) or (increment < 0 if is_current else increment <= 0):
+                    continue
 
-            # 10. Увеличиваем прогресс, но не выше цели: для задания на 10 карт максимум будет 10
-            state["value"] = min(definition.target, increment if is_current else state["value"] + increment)
-
+                # 10. Увеличиваем прогресс, но не выше цели: для задания на 10 карт максимум будет 10
+                state["value"] = min(definition.target, increment if is_current else state["value"] + increment)
             # 11. Если цель еще не достигнута — счетчик уже увеличили, а награду пока не выдаем
             if state["value"] < definition.target:
                 continue
