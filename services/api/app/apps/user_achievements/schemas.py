@@ -29,6 +29,9 @@ class AchievementEventType(StrEnum):
 
     RESOURCES_CHECKED = "resources.checked"
 
+    # крафт или милл карты или лидера
+    ACTOR_TRANSFORMED = "actor.transformed"
+
 
 class ResourcesCheckedData(Base):
     # Клиент передаёт только сигнал, баланс берём из БД.
@@ -55,6 +58,20 @@ class ActionPlayedData(Base):
 class ActionPlayedEvent(Base):
     type: Literal[AchievementEventType.ACTION_PLAYED]
     data: ActionPlayedData
+
+
+class ActorTransformedData(Base):
+    action: Literal["craft", "mill"]
+    actor: dict[str, JsonValue]
+    # Рецепт сохраняем со знаками, как пришёл с фронта.
+    recipe: dict[ResourceType, StrictInt | Annotated[StrictFloat, Field(allow_inf_nan=False)]]
+    spent: dict[ResourceType, PositiveAmount]
+    gained: dict[ResourceType, PositiveAmount]
+
+
+class ActorTransformedEvent(Base):
+    type: Literal[AchievementEventType.ACTOR_TRANSFORMED]
+    data: ActorTransformedData
 
 
 class ResourceSpentEvent(Base):
@@ -94,6 +111,7 @@ class ResourceTransformedEvent(Base):
 AchievementEvent = Annotated[
     ResourcesCheckedEvent
     | ActionPlayedEvent
+    | ActorTransformedEvent
     | ResourceSpentEvent
     | ResourceGainedEvent
     | ResourceOpenedEvent
