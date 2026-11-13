@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import Annotated, Literal
 
 from lib.utils.schemas import Base
-from lib.utils.schemas.game import ResourceType, UpgradeSubtype, UpgradeType
+from lib.utils.schemas.game import ResourceType, UpgradeSubtype, UpgradeType, LeaderboardGameMode
 from pydantic import ConfigDict, Field, JsonValue, StrictBool, StrictFloat, StrictInt, StrictStr, model_validator
 from services.api.app.apps.progress.schemas import UserResources
 
@@ -38,6 +38,9 @@ class AchievementEventType(StrEnum):
 
     # крафт или милл карты или лидера
     ACTOR_TRANSFORMED = "actor.transformed"
+
+    GAME_STARTED = "game.started"
+    GAME_WON = "game.won"
 
 
 class ResourcesCheckedData(Base):
@@ -103,7 +106,21 @@ class ResourceAmountsData(Base):
     item: ResourceType | None = None
 
 
-class ActionPlayedData(Base):
+class GameModeData(Base):
+    mode: LeaderboardGameMode
+
+
+class GameStartedEvent(Base):
+    type: Literal[AchievementEventType.GAME_STARTED]
+    data: GameModeData
+
+
+class GameWonEvent(Base):
+    type: Literal[AchievementEventType.GAME_WON]
+    data: GameModeData
+
+
+class ActionPlayedData(GameModeData):
     # Весь снимок карты/лидера, включая вложенные поля и массивы.
     actor: dict[str, JsonValue]
 
@@ -184,6 +201,8 @@ AchievementEvent = Annotated[
     | DeckDeletedEvent
     | UpgradesCheckedEvent
     | UpgradePurchasedEvent
+    | GameStartedEvent
+    | GameWonEvent
     | ActionPlayedEvent
     | ActorTransformedEvent
     | ResourceSpentEvent
