@@ -69,6 +69,8 @@ class ResourceAmountsData(Base):
     resources: dict[ResourceType, PositiveAmount]
     # Необязательная причина операции для фильтров контрактов.
     subtype: str | None = None
+    # Название использованного предмета для unique по item.
+    item: ResourceType | None = None
 
 
 class ActionPlayedData(Base):
