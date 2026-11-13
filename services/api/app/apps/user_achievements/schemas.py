@@ -25,6 +25,7 @@ class AchievementEventType(StrEnum):
     RESOURCE_GAINED = "resource.gained"
     # any resource opened - keys, kegs/big kegs, chests
     RESOURCE_OPENED = "resource.opened"
+    INVENTORY_USED = "inventory.used"
     RESOURCE_TRANSFORMED = "resource.transformed"
 
     RESOURCES_CHECKED = "resources.checked"
@@ -116,6 +117,21 @@ class ResourceOpenedEvent(Base):
     data: ResourceOpenedData
 
 
+class InventoryUseResult(Base):
+    # Реально добавленные карты, а не значение прокачки или число попыток.
+    cards_drawn: Annotated[int, Field(strict=True, ge=0)]
+
+
+class InventoryUsedData(Base):
+    item: ResourceType
+    result: InventoryUseResult
+
+
+class InventoryUsedEvent(Base):
+    type: Literal[AchievementEventType.INVENTORY_USED]
+    data: InventoryUsedData
+
+
 class ResourceTransformedData(Base):
     action: Literal["buy", "sell", "craft", "mill"]
     resource: ResourceType
@@ -140,6 +156,7 @@ AchievementEvent = Annotated[
     | ResourceSpentEvent
     | ResourceGainedEvent
     | ResourceOpenedEvent
+    | InventoryUsedEvent
     | ResourceTransformedEvent,
     Field(discriminator="type"),
 ]
