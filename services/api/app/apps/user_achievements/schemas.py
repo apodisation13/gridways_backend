@@ -120,6 +120,7 @@ class GameStartedEvent(Base):
 
 
 class GameWonData(GameModeData):
+    difficulty: Literal["easy", "normal", "hard"] | None = None
     starting_deck: dict[str, JsonValue] | None = None
     leader_uses: Annotated[int, Field(strict=True, ge=0)] | None = None
 
