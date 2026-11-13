@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import Annotated, Literal
 
 from lib.utils.schemas import Base
-from lib.utils.schemas.game import ResourceType
+from lib.utils.schemas.game import ResourceType, UpgradeSubtype, UpgradeType
 from pydantic import ConfigDict, Field, JsonValue, StrictBool, StrictFloat, StrictInt, StrictStr, model_validator
 from services.api.app.apps.progress.schemas import UserResources
 
@@ -28,6 +28,8 @@ class AchievementEventType(StrEnum):
     RESOURCE_TRANSFORMED = "resource.transformed"
 
     RESOURCES_CHECKED = "resources.checked"
+    UPGRADES_CHECKED = "upgrades.checked"
+    UPGRADE_PURCHASED = "upgrade.purchased"
 
     # крафт или милл карты или лидера
     ACTOR_TRANSFORMED = "actor.transformed"
@@ -41,6 +43,25 @@ class ResourcesCheckedData(Base):
 class ResourcesCheckedEvent(Base):
     type: Literal[AchievementEventType.RESOURCES_CHECKED]
     data: ResourcesCheckedData
+
+
+class UpgradesCheckedEvent(Base):
+    type: Literal[AchievementEventType.UPGRADES_CHECKED]
+    # Как и с ресурсами, от клиента приходит пустой сигнал. Данные берёт сервис из БД.
+    data: ResourcesCheckedData
+
+
+class UpgradePurchasedData(Base):
+    upgrade_type: UpgradeType
+    upgrade_subtype: UpgradeSubtype
+    level: PositiveId
+    value: StrictInt | Annotated[StrictFloat, Field(allow_inf_nan=False)] | StrictBool
+    maxed: StrictBool
+
+
+class UpgradePurchasedEvent(Base):
+    type: Literal[AchievementEventType.UPGRADE_PURCHASED]
+    data: UpgradePurchasedData
 
 
 class ResourceAmountsData(Base):
@@ -110,6 +131,8 @@ class ResourceTransformedEvent(Base):
 
 AchievementEvent = Annotated[
     ResourcesCheckedEvent
+    | UpgradesCheckedEvent
+    | UpgradePurchasedEvent
     | ActionPlayedEvent
     | ActorTransformedEvent
     | ResourceSpentEvent
@@ -147,7 +170,7 @@ class CountCounter(Base):
 
 class CurrentCounter(Base):
     type: Literal["current"]
-    field: Annotated[str, Field(pattern=r"^resources\.[a-z_]+$")]
+    field: Annotated[str, Field(min_length=1)]
 
 
 class UniqueCounter(Base):
@@ -203,12 +226,27 @@ class AchievementDefinition(Base):
 
     @model_validator(mode="after")
     def validate_current_counter(self) -> "AchievementDefinition":
-        # Сигнал проверки баланса не должен становиться обычным count/sum-событием.
+        # Проверки текущего состояния используют current, а не накопление событий.
         is_current = isinstance(self.counter, CurrentCounter)
-        if is_current != (self.event == AchievementEventType.RESOURCES_CHECKED):
-            raise ValueError("current counter requires resources.checked event and vice versa")
+        checked_events = {AchievementEventType.RESOURCES_CHECKED, AchievementEventType.UPGRADES_CHECKED}
+        if is_current != (self.event in checked_events):
+            raise ValueError("current counter requires a state-check event and vice versa")
         if isinstance(self.counter, UniqueCounter) and self.target != int(self.target):
             raise ValueError("unique counter requires an integer target")
         if is_current:
-            ResourceType(self.counter.field.removeprefix("resources."))
+            parts = self.counter.field.split(".")
+            if self.event == AchievementEventType.RESOURCES_CHECKED:
+                if len(parts) != 2 or parts[0] != "resources":
+                    raise ValueError("resource current field must be resources.<resource>")
+                ResourceType(parts[1])
+            elif len(parts) == 4 and parts[0] == "upgrades" and parts[3] in {"level", "value"}:
+                UpgradeType(parts[1])
+                UpgradeSubtype(parts[2])
+            elif len(parts) == 3 and parts[0] == "summary" and parts[2] in {
+                "total_count", "maxed_count", "all_maxed",
+            }:
+                if parts[1] not in {"all", "non_settings"}:
+                    UpgradeType(parts[1])
+            else:
+                raise ValueError("invalid upgrade current field")
         return self

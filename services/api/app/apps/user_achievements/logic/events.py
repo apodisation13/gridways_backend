@@ -42,6 +42,7 @@ def apply_events(
     events: list[AchievementEvent],
     definitions: list[AchievementDefinition],
     resources: dict | None = None,
+    upgrades: dict | None = None,
 ) -> list[GrantedAchievementReward]:
     rewards = []
     # Одно время для всех заданий, которые выполнились в этой пачке событий
@@ -54,12 +55,16 @@ def apply_events(
         data = event.data.model_dump(mode="json", by_alias=True)
         if event.type == AchievementEventType.RESOURCES_CHECKED:
             data = {"resources": resources or {}}
+        elif event.type == AchievementEventType.UPGRADES_CHECKED:
+            data = upgrades or {}
 
         # 3. Перебираем ВЕСЬ плоский список ВСЕХ заданий
         for definition in definitions:
             # 4. Если задание ждет другое событие — пропускаем его
             is_current = isinstance(definition.counter, CurrentCounter)
-            if is_current and event.type != AchievementEventType.RESOURCES_CHECKED:
+            if is_current and event.type not in {
+                AchievementEventType.RESOURCES_CHECKED, AchievementEventType.UPGRADES_CHECKED,
+            }:
                 continue
             if definition.event != event.type:
                 continue

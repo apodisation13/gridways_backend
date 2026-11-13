@@ -3,6 +3,7 @@ from services.api.app.apps.game_data.logic import game_const as game_const_logic
 from services.api.app.apps.progress import logic as progress_logic
 from services.api.app.apps.upgrades import logic as upgrades_logic
 from services.api.app.apps.user_achievements.logic.events import apply_events, get_permanent_definitions
+from services.api.app.apps.user_achievements.logic.upgrades import build_upgrade_snapshot
 from services.api.app.apps.user_achievements.schemas import (
     AchievementDefinition,
     AchievementEvent,
@@ -41,13 +42,23 @@ class AchievementsService:
             )
 
             # 4. Применяем все события
+            upgrades = None
+            if any(event.type == AchievementEventType.UPGRADES_CHECKED for event in events):
+                # Как при покупке, сначала блокируем прокачки, затем ресурсы.
+                # Подтверждение опирается на БД, а не на переданный фронтом снимок.
+                user_upgrades = await connection.fetchval(
+                    "SELECT data::jsonb FROM user_upgrades WHERE id = $1 FOR UPDATE", user_id,
+                )
+                if user_upgrades is None:
+                    user_upgrades = await upgrades_logic.get_user_upgrades(connection, user_id)
+                upgrades = build_upgrade_snapshot(game_constants["upgrades"], user_upgrades)
             resources = None
             if any(event.type == AchievementEventType.RESOURCES_CHECKED for event in events):
                 # Баланс стабилен до конца проверки и выдачи наград в этой транзакции.
                 await connection.fetchval("SELECT id FROM user_resources WHERE id = $1 FOR UPDATE", user_id)
                 balance = await progress_logic.get_user_resources(user_id, connection)
                 resources = balance.model_dump(mode="json")
-            rewards = apply_events(progress, events, definitions, resources)
+            rewards = apply_events(progress, events, definitions, resources, upgrades)
 
             # 5. Если награды нужно - начисляем их тут.
             user_resources = None
