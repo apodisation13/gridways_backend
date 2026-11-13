@@ -26,6 +26,9 @@ class AchievementEventType(StrEnum):
     # any resource opened - keys, kegs/big kegs, chests
     RESOURCE_OPENED = "resource.opened"
     INVENTORY_USED = "inventory.used"
+    INVENTORY_RESTORED = "inventory.restored"
+    ARENA_UPGRADE_PURCHASED = "arena.upgrade.purchased"
+    ARENA_LEVEL_REACHED = "arena.level.reached"
     DECK_CREATED = "deck.created"
     DECK_SAVED = "deck.saved"
     DECK_DELETED = "deck.deleted"
@@ -107,7 +110,8 @@ class ResourceAmountsData(Base):
 
 
 class GameModeData(Base):
-    mode: LeaderboardGameMode
+    # normal — имя обычного режима в контрактах; season оставляем для совместимости.
+    mode: LeaderboardGameMode | Literal["normal"]
 
 
 class GameStartedEvent(Base):
@@ -115,9 +119,14 @@ class GameStartedEvent(Base):
     data: GameModeData
 
 
+class GameWonData(GameModeData):
+    starting_deck: dict[str, JsonValue] | None = None
+    leader_uses: Annotated[int, Field(strict=True, ge=0)] | None = None
+
+
 class GameWonEvent(Base):
     type: Literal[AchievementEventType.GAME_WON]
-    data: GameModeData
+    data: GameWonData
 
 
 class ActionPlayedData(GameModeData):
@@ -163,14 +172,38 @@ class ResourceOpenedEvent(Base):
     data: ResourceOpenedData
 
 
-class InventoryUseResult(Base):
-    # Реально добавленные карты, а не значение прокачки или число попыток.
-    cards_drawn: Annotated[int, Field(strict=True, ge=0)]
-
-
-class InventoryUsedData(Base):
+class InventoryUsedData(GameModeData):
     item: ResourceType
-    result: InventoryUseResult
+    # Только фактически измеренные результаты. Пустой словарь допустим.
+    result: dict[str, Annotated[int, Field(strict=True, ge=0)]]
+
+
+class InventoryRestoredData(GameModeData):
+    item: ResourceType
+
+
+class InventoryRestoredEvent(Base):
+    type: Literal[AchievementEventType.INVENTORY_RESTORED]
+    data: InventoryRestoredData
+
+
+class ArenaUpgradePurchasedData(Base):
+    upgrade_subtype: UpgradeSubtype
+    level: PositiveId
+
+
+class ArenaUpgradePurchasedEvent(Base):
+    type: Literal[AchievementEventType.ARENA_UPGRADE_PURCHASED]
+    data: ArenaUpgradePurchasedData
+
+
+class ArenaLevelReachedData(Base):
+    level: PositiveId
+
+
+class ArenaLevelReachedEvent(Base):
+    type: Literal[AchievementEventType.ARENA_LEVEL_REACHED]
+    data: ArenaLevelReachedData
 
 
 class InventoryUsedEvent(Base):
@@ -208,6 +241,9 @@ AchievementEvent = Annotated[
     | ResourceSpentEvent
     | ResourceGainedEvent
     | ResourceOpenedEvent
+    | InventoryRestoredEvent
+    | ArenaUpgradePurchasedEvent
+    | ArenaLevelReachedEvent
     | InventoryUsedEvent
     | ResourceTransformedEvent,
     Field(discriminator="type"),

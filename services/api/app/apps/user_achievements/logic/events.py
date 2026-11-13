@@ -59,6 +59,12 @@ def apply_events(
             deck = data["deck"]
             # Всегда пересчитываем из карт: клиентская summary не является источником.
             data["deck"] = {**deck, "summary": build_deck_summary(deck.get("cards"))}
+        if event.type == AchievementEventType.GAME_WON:
+            deck = data.get("starting_deck")
+            if isinstance(deck, dict):
+                data["starting_deck"] = {**deck, "summary": build_deck_summary(deck.get("cards"))}
+            # При отсутствующем снимке не создаём фиктивные нули/пустую колоду.
+            data = {key: value for key, value in data.items() if value is not None}
         if event.type == AchievementEventType.RESOURCES_CHECKED:
             data = {"resources": resources or {}}
         elif event.type == AchievementEventType.UPGRADES_CHECKED:
