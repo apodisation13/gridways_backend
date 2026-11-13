@@ -20,6 +20,7 @@ PositiveAmount = (
 class AchievementEventType(StrEnum):
     # сard or leader played
     ACTION_PLAYED = "action.played"
+    PASSIVE_TRIGGERED = "passive.triggered"
     # any resource spent or gained
     RESOURCE_SPENT = "resource.spent"
     RESOURCE_GAINED = "resource.gained"
@@ -141,6 +142,15 @@ class ActionPlayedData(GameModeData):
     actor: dict[str, JsonValue]
 
 
+class PassiveTriggeredData(ActionPlayedData):
+    location: Literal["hand", "deck", "grave"]
+
+
+class PassiveTriggeredEvent(Base):
+    type: Literal[AchievementEventType.PASSIVE_TRIGGERED]
+    data: PassiveTriggeredData
+
+
 class ActionPlayedEvent(Base):
     type: Literal[AchievementEventType.ACTION_PLAYED]
     data: ActionPlayedData
@@ -245,6 +255,7 @@ AchievementEvent = Annotated[
     | GameWonEvent
     | GameLostEvent
     | ActionPlayedEvent
+    | PassiveTriggeredEvent
     | ActorTransformedEvent
     | ResourceSpentEvent
     | ResourceGainedEvent
