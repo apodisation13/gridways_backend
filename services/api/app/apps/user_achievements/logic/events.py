@@ -43,6 +43,7 @@ def apply_events(
     definitions: list[AchievementDefinition],
     resources: dict | None = None,
     upgrades: dict | None = None,
+    decks: dict | None = None,
 ) -> list[GrantedAchievementReward]:
     rewards = []
     # Одно время для всех заданий, которые выполнились в этой пачке событий
@@ -57,6 +58,8 @@ def apply_events(
             data = {"resources": resources or {}}
         elif event.type == AchievementEventType.UPGRADES_CHECKED:
             data = upgrades or {}
+        elif event.type == AchievementEventType.DECKS_CHECKED:
+            data = {"decks": decks or {}}
 
         # 3. Перебираем ВЕСЬ плоский список ВСЕХ заданий
         for definition in definitions:
@@ -64,6 +67,7 @@ def apply_events(
             is_current = isinstance(definition.counter, CurrentCounter)
             if is_current and event.type not in {
                 AchievementEventType.RESOURCES_CHECKED, AchievementEventType.UPGRADES_CHECKED,
+                AchievementEventType.DECKS_CHECKED,
             }:
                 continue
             if definition.event != event.type:

@@ -35,6 +35,17 @@ class AchievementsService:
             # 2. Определеляем сами задания - плоским списком?
             definitions: list[AchievementDefinition] = get_permanent_definitions(categories)
 
+            decks = None
+            if any(event.type == AchievementEventType.DECKS_CHECKED for event in events):
+                # Та же блокировка, что при создании/удалении колод: состав стабилен
+                # до выдачи награды. users берём до остальных блокировок.
+                await connection.fetchval("SELECT id FROM users WHERE id = $1 FOR UPDATE", user_id)
+                count = await connection.fetchval(
+                    "SELECT count(*) FROM user_decks WHERE user_id = $1", user_id,
+                )
+                # Базовая колода входит в хранение наравне с пользовательскими.
+                decks = {"count": count}
+
             # 3. Блокируем строку на случай двух запросов одновременно
             progress: dict = await connection.fetchval(
                 """SELECT progress FROM user_achievements WHERE id = $1 FOR UPDATE""",
@@ -58,7 +69,7 @@ class AchievementsService:
                 await connection.fetchval("SELECT id FROM user_resources WHERE id = $1 FOR UPDATE", user_id)
                 balance = await progress_logic.get_user_resources(user_id, connection)
                 resources = balance.model_dump(mode="json")
-            rewards = apply_events(progress, events, definitions, resources, upgrades)
+            rewards = apply_events(progress, events, definitions, resources, upgrades, decks)
 
             # 5. Если награды нужно - начисляем их тут.
             user_resources = None

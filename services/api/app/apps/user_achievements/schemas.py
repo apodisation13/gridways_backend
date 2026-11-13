@@ -26,6 +26,9 @@ class AchievementEventType(StrEnum):
     # any resource opened - keys, kegs/big kegs, chests
     RESOURCE_OPENED = "resource.opened"
     INVENTORY_USED = "inventory.used"
+    DECK_CREATED = "deck.created"
+    DECK_DELETED = "deck.deleted"
+    DECKS_CHECKED = "decks.checked"
     RESOURCE_TRANSFORMED = "resource.transformed"
 
     RESOURCES_CHECKED = "resources.checked"
@@ -50,6 +53,26 @@ class UpgradesCheckedEvent(Base):
     type: Literal[AchievementEventType.UPGRADES_CHECKED]
     # Как и с ресурсами, от клиента приходит пустой сигнал. Данные берёт сервис из БД.
     data: ResourcesCheckedData
+
+
+class DecksCheckedEvent(Base):
+    type: Literal[AchievementEventType.DECKS_CHECKED]
+    data: ResourcesCheckedData
+
+
+class DeckEventData(Base):
+    # Снимок состава с полным лидером, для общих фильтров по вложенным полям.
+    deck: dict[str, JsonValue]
+
+
+class DeckCreatedEvent(Base):
+    type: Literal[AchievementEventType.DECK_CREATED]
+    data: DeckEventData
+
+
+class DeckDeletedEvent(Base):
+    type: Literal[AchievementEventType.DECK_DELETED]
+    data: DeckEventData
 
 
 class UpgradePurchasedData(Base):
@@ -149,6 +172,9 @@ class ResourceTransformedEvent(Base):
 
 AchievementEvent = Annotated[
     ResourcesCheckedEvent
+    | DecksCheckedEvent
+    | DeckCreatedEvent
+    | DeckDeletedEvent
     | UpgradesCheckedEvent
     | UpgradePurchasedEvent
     | ActionPlayedEvent
@@ -247,7 +273,11 @@ class AchievementDefinition(Base):
     def validate_current_counter(self) -> "AchievementDefinition":
         # Проверки текущего состояния используют current, а не накопление событий.
         is_current = isinstance(self.counter, CurrentCounter)
-        checked_events = {AchievementEventType.RESOURCES_CHECKED, AchievementEventType.UPGRADES_CHECKED}
+        checked_events = {
+            AchievementEventType.RESOURCES_CHECKED,
+            AchievementEventType.UPGRADES_CHECKED,
+            AchievementEventType.DECKS_CHECKED,
+        }
         if is_current != (self.event in checked_events):
             raise ValueError("current counter requires a state-check event and vice versa")
         if isinstance(self.counter, UniqueCounter) and self.target != int(self.target):
@@ -258,6 +288,9 @@ class AchievementDefinition(Base):
                 if len(parts) != 2 or parts[0] != "resources":
                     raise ValueError("resource current field must be resources.<resource>")
                 ResourceType(parts[1])
+            elif self.event == AchievementEventType.DECKS_CHECKED:
+                if self.counter.field != "decks.count":
+                    raise ValueError("deck current field must be decks.count")
             elif len(parts) == 4 and parts[0] == "upgrades" and parts[3] in {"level", "value"}:
                 UpgradeType(parts[1])
                 UpgradeSubtype(parts[2])
