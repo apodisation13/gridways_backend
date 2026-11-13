@@ -143,7 +143,7 @@ class ActionPlayedData(GameModeData):
 
 
 class PassiveTriggeredData(ActionPlayedData):
-    location: Literal["hand", "deck", "grave"]
+    location: Literal["hand", "deck", "grave", "passive_once"]
 
 
 class PassiveTriggeredEvent(Base):
