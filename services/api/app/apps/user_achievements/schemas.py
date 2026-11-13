@@ -44,6 +44,7 @@ class AchievementEventType(StrEnum):
 
     GAME_STARTED = "game.started"
     GAME_WON = "game.won"
+    GAME_LOST = "game.lost"
 
 
 class ResourcesCheckedData(Base):
@@ -112,6 +113,11 @@ class ResourceAmountsData(Base):
 class GameModeData(Base):
     # normal — имя обычного режима в контрактах; season оставляем для совместимости.
     mode: LeaderboardGameMode | Literal["normal"]
+
+
+class GameLostEvent(Base):
+    type: Literal[AchievementEventType.GAME_LOST]
+    data: GameModeData
 
 
 class GameStartedEvent(Base):
@@ -237,6 +243,7 @@ AchievementEvent = Annotated[
     | UpgradePurchasedEvent
     | GameStartedEvent
     | GameWonEvent
+    | GameLostEvent
     | ActionPlayedEvent
     | ActorTransformedEvent
     | ResourceSpentEvent
@@ -322,13 +329,24 @@ FilterCondition = Annotated[
 ]
 
 
+class StreakReset(Base):
+    event: AchievementEventType
+    filters: dict[str, FilterScalar | FilterCondition] = Field(default_factory=dict)
+
+
+class StreakCounter(Base):
+    type: Literal["streak"]
+    length: Annotated[int, Field(strict=True, gt=0)]
+    reset: StreakReset
+
+
 class AchievementDefinition(Base):
     model_config = ConfigDict(extra="ignore")
 
     id: str
     event: AchievementEventType
     target: PositiveAmount
-    counter: Annotated[CountCounter | SumCounter | CurrentCounter | UniqueCounter, Field(discriminator="type")]
+    counter: Annotated[CountCounter | SumCounter | CurrentCounter | UniqueCounter | StreakCounter, Field(discriminator="type")]
     filters: dict[str, FilterScalar | FilterCondition] = Field(default_factory=dict)
     rewards: AchievementRewards
 
@@ -343,8 +361,8 @@ class AchievementDefinition(Base):
         }
         if is_current != (self.event in checked_events):
             raise ValueError("current counter requires a state-check event and vice versa")
-        if isinstance(self.counter, UniqueCounter) and self.target != int(self.target):
-            raise ValueError("unique counter requires an integer target")
+        if isinstance(self.counter, (UniqueCounter, StreakCounter)) and self.target != int(self.target):
+            raise ValueError("unique/streak counter requires an integer target")
         if is_current:
             parts = self.counter.field.split(".")
             if self.event == AchievementEventType.RESOURCES_CHECKED:

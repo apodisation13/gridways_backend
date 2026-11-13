@@ -9,6 +9,7 @@ from services.api.app.apps.user_achievements.schemas import (
     CurrentCounter,
     GrantedAchievementReward,
     SumCounter,
+    StreakCounter,
     UniqueCounter,
 )
 
@@ -81,6 +82,16 @@ def apply_events(
                 AchievementEventType.DECKS_CHECKED,
             }:
                 continue
+            counter = definition.counter
+            if isinstance(counter, StreakCounter):
+                if counter.reset.event == event.type and matches_filters(
+                    data, counter.reset.model_dump(mode="json")["filters"],
+                ):
+                    state = progress.get("permanent", {}).get(definition.id)
+                    # Завершённые контракты не сбрасываем, полные серии сохраняем.
+                    if state and not state.get("reward_granted_at") and not state.get("completed_at"):
+                        state["streak"] = 0
+                    continue
             if definition.event != event.type:
                 continue
 
@@ -104,7 +115,13 @@ def apply_events(
             if state.get("reward_granted_at") is not None:
                 continue
 
-            if isinstance(definition.counter, UniqueCounter):
+            if isinstance(counter, StreakCounter):
+                streak = state.get("streak", 0) + 1
+                if streak >= counter.length:
+                    state["value"] = min(definition.target, state["value"] + 1)
+                    streak = 0
+                state["streak"] = streak
+            elif isinstance(definition.counter, UniqueCounter):
                 item = get_field(data, definition.counter.field)
                 # Только названия и числовые ID; bool/null/объекты не являются ID.
                 if not isinstance(item, str) and not is_number(item):
