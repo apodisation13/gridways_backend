@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+from services.api.app.apps.user_achievements.logic.decks import build_deck_summary
 from services.api.app.apps.user_achievements.logic.filters import get_field, is_number, matches_filters
 from services.api.app.apps.user_achievements.schemas import (
     AchievementDefinition,
@@ -54,6 +55,10 @@ def apply_events(
         # 2. Превращаем data из Pydantic-модели в обычный словарь
         # actor остаётся полным снимком, не привязанным к заранее перечисленным полям.
         data = event.data.model_dump(mode="json", by_alias=True)
+        if event.type == AchievementEventType.DECK_SAVED:
+            deck = data["deck"]
+            # Всегда пересчитываем из карт: клиентская summary не является источником.
+            data["deck"] = {**deck, "summary": build_deck_summary(deck.get("cards"))}
         if event.type == AchievementEventType.RESOURCES_CHECKED:
             data = {"resources": resources or {}}
         elif event.type == AchievementEventType.UPGRADES_CHECKED:

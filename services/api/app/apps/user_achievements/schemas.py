@@ -27,6 +27,7 @@ class AchievementEventType(StrEnum):
     RESOURCE_OPENED = "resource.opened"
     INVENTORY_USED = "inventory.used"
     DECK_CREATED = "deck.created"
+    DECK_SAVED = "deck.saved"
     DECK_DELETED = "deck.deleted"
     DECKS_CHECKED = "decks.checked"
     RESOURCE_TRANSFORMED = "resource.transformed"
@@ -67,6 +68,11 @@ class DeckEventData(Base):
 
 class DeckCreatedEvent(Base):
     type: Literal[AchievementEventType.DECK_CREATED]
+    data: DeckEventData
+
+
+class DeckSavedEvent(Base):
+    type: Literal[AchievementEventType.DECK_SAVED]
     data: DeckEventData
 
 
@@ -173,6 +179,7 @@ class ResourceTransformedEvent(Base):
 AchievementEvent = Annotated[
     ResourcesCheckedEvent
     | DecksCheckedEvent
+    | DeckSavedEvent
     | DeckCreatedEvent
     | DeckDeletedEvent
     | UpgradesCheckedEvent
