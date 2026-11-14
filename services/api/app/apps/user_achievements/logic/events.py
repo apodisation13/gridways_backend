@@ -62,18 +62,15 @@ def apply_events(
         # Для сохраненной колоды вычисляем сводку по ее картам: сколько бронзовых, все ли нейтральные и т.д.
         # Сами карты здесь пришли с фронта, но готовую summary от него не используем.
         if event.type == AchievementEventType.DECK_SAVED:
-            deck = data["deck"]
             # Всегда пересчитываем из карт: клиентская summary не является источником.
-            data["deck"] = {**deck, "summary": build_deck_summary(deck.get("cards"))}
+            data["deck"]["summary"] = build_deck_summary(event.data.deck.cards)
+
         # При победе проверять можно стартовую колоду, а не только ее состояние в конце игры.
         if event.type == AchievementEventType.GAME_WON:
-            deck = data.get("starting_deck")
-            if isinstance(deck, dict):
-                data["starting_deck"] = {**deck, "summary": build_deck_summary(deck.get("cards"))}
-            # Необязательные поля без значения убираем совсем. Например, отсутствующий leader_uses
-            # не должен означать «лидера использовали 0 раз» и выполнять соответствующее задание.
-            # При отсутствующем снимке не создаём фиктивные нули/пустую колоду.
-            data = {key: value for key, value in data.items() if value is not None}
+            # Состав уже проверен схемой. Дополняем словарь для фильтров сводкой,
+            # не меняя входную Pydantic-модель; повторно проверять тип колоды не нужно.
+            data["starting_deck"]["summary"] = build_deck_summary(event.data.starting_deck.cards)
+
         # Для проверок состояния заменяем пустое data события снимком, который сервис прочитал из БД.
         # В фильтрах и counter.field будут пути resources.money, upgrades.resources.money.level и decks.count.
         if event.type == AchievementEventType.RESOURCES_CHECKED:

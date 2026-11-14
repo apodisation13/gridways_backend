@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import Annotated, Literal
 
 from lib.utils.schemas import Base
-from lib.utils.schemas.game import ResourceType, UpgradeSubtype, UpgradeType, LeaderboardGameMode
+from lib.utils.schemas.game import ResourceType, UpgradeSubtype, UpgradeType, LeaderboardGameMode, LevelDifficulty
 from pydantic import ConfigDict, Field, JsonValue, StrictBool, StrictFloat, StrictInt, StrictStr, model_validator
 from services.api.app.apps.progress.schemas import UserResources
 
@@ -78,9 +78,21 @@ class DecksCheckedEvent(Base):
 
 # В dict[str, JsonValue] допускается вложенный JSON: словари, массивы, числа и т.д.
 # Это позволяет фильтровать новые поля снимка без отдельной Pydantic-модели на каждое поле карты.
+class DeckComposition(Base):
+    # Структура состава известна; внутри карт/лидера сохраняем все игровые поля.
+    cards: list[dict[str, JsonValue]]
+    leader: dict[str, JsonValue]
+
+
+class UserDeckSnapshot(DeckComposition):
+    # Создание/редактирование присылает эти поля, удаление — ещё ID и поля колоды.
+    model_config = ConfigDict(extra="allow")
+    name: StrictStr
+    health: StrictInt | Annotated[StrictFloat, Field(allow_inf_nan=False)]
+
+
 class DeckEventData(Base):
-    # Снимок состава с полным лидером, для общих фильтров по вложенным полям.
-    deck: dict[str, JsonValue]
+    deck: UserDeckSnapshot
 
 
 class DeckCreatedEvent(Base):
@@ -142,13 +154,12 @@ class EnemyGraveSummary(Base):
     gold: Annotated[int, Field(strict=True, ge=0)]
 
 
-# Дополнительные условия победы необязательны: старый/неполный снимок может их не содержать.
-# Отсутствующее поле не должно трактоваться как 0: например, нет leader_uses ≠ лидер не использовался.
-class GameWonData(GameModeData):
-    difficulty: Literal["easy", "normal", "hard"] | None = None
-    starting_deck: dict[str, JsonValue] | None = None
-    leader_uses: Annotated[int, Field(strict=True, ge=0)] | None = None
-    enemy_grave: EnemyGraveSummary | None = None
+class GameWonData(Base):
+    mode: LeaderboardGameMode | Literal["normal"]
+    difficulty: LevelDifficulty
+    starting_deck: DeckComposition
+    leader_uses: int = Field(strict=True, ge=0)
+    enemy_grave: EnemyGraveSummary
 
 
 class GameWonEvent(Base):
