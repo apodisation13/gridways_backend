@@ -56,9 +56,6 @@ class AchievementEventType(StrEnum):
     # крафт или милл карты или лидера
     ACTOR_TRANSFORMED = "actor.transformed"
 
-    GAME_WON = "game.won"
-    GAME_LOST = "game.lost"
-
 
 class ResourcesCheckedData(Base):
     # Клиент передаёт только сигнал, баланс берём из БД.
