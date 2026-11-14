@@ -352,6 +352,9 @@ class StreakCounter(Base):
 
 
 class AchievementDefinition(Base):
+    # Метаданные интерфейса; прогресс по-прежнему хранится по id задания.
+    group: Annotated[StrictStr, Field(min_length=1, pattern=r"\S")] | None = None
+
     model_config = ConfigDict(extra="ignore")
 
     id: str
