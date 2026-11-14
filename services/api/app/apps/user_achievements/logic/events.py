@@ -39,6 +39,8 @@ def get_permanent_definitions(
     return definitions
 
 
+# Эта функция не сохраняет данные в БД. Она изменяет progress, который передал сервис,
+# и собирает награды для последующего начисления в той же транзакции.
 def apply_events(
     progress: dict,
     events: list[AchievementEvent],
@@ -52,20 +54,28 @@ def apply_events(
     timestamp = datetime.now(UTC).isoformat()
 
     # 1. Начинаем перебирать список пришедших с фронта событий
+    # Порядок важен для серий: победа → поражение → победа отличается от двух побед подряд.
     for event in events:
         # 2. Превращаем data из Pydantic-модели в обычный словарь
         # actor остаётся полным снимком, не привязанным к заранее перечисленным полям.
         data = event.data.model_dump(mode="json", by_alias=True)
+        # Для сохраненной колоды вычисляем сводку по ее картам: сколько бронзовых, все ли нейтральные и т.д.
+        # Сами карты здесь пришли с фронта, но готовую summary от него не используем.
         if event.type == AchievementEventType.DECK_SAVED:
             deck = data["deck"]
             # Всегда пересчитываем из карт: клиентская summary не является источником.
             data["deck"] = {**deck, "summary": build_deck_summary(deck.get("cards"))}
+        # При победе проверять можно стартовую колоду, а не только ее состояние в конце игры.
         if event.type == AchievementEventType.GAME_WON:
             deck = data.get("starting_deck")
             if isinstance(deck, dict):
                 data["starting_deck"] = {**deck, "summary": build_deck_summary(deck.get("cards"))}
+            # Необязательные поля без значения убираем совсем. Например, отсутствующий leader_uses
+            # не должен означать «лидера использовали 0 раз» и выполнять соответствующее задание.
             # При отсутствующем снимке не создаём фиктивные нули/пустую колоду.
             data = {key: value for key, value in data.items() if value is not None}
+        # Для проверок состояния заменяем пустое data события снимком, который сервис прочитал из БД.
+        # В фильтрах и counter.field будут пути resources.money, upgrades.resources.money.level и decks.count.
         if event.type == AchievementEventType.RESOURCES_CHECKED:
             data = {"resources": resources or {}}
         elif event.type == AchievementEventType.UPGRADES_CHECKED:
@@ -75,7 +85,8 @@ def apply_events(
 
         # 3. Перебираем ВЕСЬ плоский список ВСЕХ заданий
         for definition in definitions:
-            # 4. Если задание ждет другое событие — пропускаем его
+            # 4. current — проверка текущего состояния, например «иметь 1000 денег».
+            # Обычное игровое событие не должно менять такой счетчик.
             is_current = isinstance(definition.counter, CurrentCounter)
             if is_current and event.type not in {
                 AchievementEventType.RESOURCES_CHECKED, AchievementEventType.UPGRADES_CHECKED,
@@ -83,6 +94,8 @@ def apply_events(
             }:
                 continue
             counter = definition.counter
+            # 5. У серии сначала проверяем условия СБРОСА, даже если это не основное событие задания.
+            # Например, задание считает game.won, но сбрасывает текущую серию на game.lost.
             if isinstance(counter, StreakCounter):
                 if any(
                     reset.event == event.type and matches_filters(
@@ -91,61 +104,81 @@ def apply_events(
                     for reset in counter.reset
                 ):
                     state = progress.get("permanent", {}).get(definition.id)
+                    # Здесь не создаем запись задания, если ее еще нет.
+                    # Сбрасываем только streak — текущую незавершенную серию.
+                    # value хранит количество уже набранных ПОЛНЫХ серий и остается прежним.
                     # Завершённые контракты не сбрасываем, полные серии сохраняем.
                     if state and not state.get("reward_granted_at") and not state.get("completed_at"):
                         state["streak"] = 0
+                    # Событие сброса уже обработали: оно не должно одновременно продолжить эту серию.
                     continue
+            # Теперь проверяем основное событие задания: чужой тип пропускаем.
             if definition.event != event.type:
                 continue
 
+            # 6. Проверяем ВСЕ фильтры задания. Например, событие action.played подходит по типу,
+            # но задание только для Bronze — Silver его не продвинет.
+            # model_dump превращает модели условий в словари, которые понимает matches_filters.
             # Пути и операторы одинаковы с фронтом: actor.color, actor.data.damage и т.д.
             filters = definition.model_dump(mode="json")["filters"]
             if not matches_filters(data, filters):
                 continue
 
-            # 6. Берем раздел permanent из прогресса юзера
+            # 7. Берем раздел permanent из прогресса юзера
             # setdefault возвращает существующее значение, а если ключа нет — добавляет его с {}
             tasks = progress.setdefault("permanent", {})
 
-            # 7. Так же берем прогресс конкретного задания, а если его нет — создаем нулевой
+            # 8. Так же берем прогресс конкретного задания, а если его нет — создаем нулевой
             # tasks и state ссылаются на вложенные словари progress: меняя state, меняем и progress
             state = tasks.setdefault(
                 definition.id,
                 {"value": 0, "completed_at": None, "reward_granted_at": None},
             )
 
-            # 8. Если награда за это задание уже выдана — больше его не считаем
+            # 9. Если награда за это задание уже выдана — больше его не считаем
             if state.get("reward_granted_at") is not None:
                 continue
 
+            # 10. Выбираем способ подсчета, который указан в конфиге задания.
             if isinstance(counter, StreakCounter):
+                # streak: считаем события подряд. length — длина одной серии, target — число полных серий.
+                # Например, length=3 и target=2: нужны две серии по 3 события, всего 6 без сбросов.
                 streak = state.get("streak", 0) + 1
                 if streak >= counter.length:
                     state["value"] = min(definition.target, state["value"] + 1)
+                    # Серии не перекрываются: после третьей победы следующая начинает новую тройку.
                     streak = 0
                 state["streak"] = streak
             elif isinstance(definition.counter, UniqueCounter):
+                # unique: считаем разные значения поля, а не количество событий.
+                # Например, actor.id: карта 7, карта 7, карта 9 дадут прогресс 2, а не 3.
                 item = get_field(data, definition.counter.field)
                 # Только названия и числовые ID; bool/null/объекты не являются ID.
                 if not isinstance(item, str) and not is_number(item):
                     continue
+                # seen сохраняется в progress и попадет в БД, поэтому уникальность работает между запросами.
                 seen = state.setdefault("seen", [])
                 if item in seen:
                     continue
                 seen.append(item)
                 state["value"] = min(definition.target, len(seen))
             else:
-                # 9. sum может брать любое числовое поле, в том числе вложенное.
-                # Для count просто прибавляем 1 за одно подходящее событие
+                # count: +1 за событие. sum: прибавляем число из counter.field, например resources.money.
+                # current: тем же способом читаем поле, но дальше ЗАМЕНЯЕМ счетчик текущим значением.
+                # get_field понимает вложенные пути: actor.data.damage, starting_deck.summary.cards_count.
                 increment = (
                     get_field(data, definition.counter.field)
                     if isinstance(definition.counter, (SumCounter, CurrentCounter))
                     else 1
                 )
+                # Отсутствующее поле, строка, bool, NaN и бесконечность не увеличивают счетчик.
+                # Для current допустим 0 (баланс мог обнулиться), для прибавления нужны числа больше 0.
                 if not is_number(increment) or (increment < 0 if is_current else increment <= 0):
                     continue
 
-                # 10. Увеличиваем прогресс, но не выше цели: для задания на 10 карт максимум будет 10
+                # Для current прогресс может уменьшаться: было 500 денег, стало 200 — value станет 200.
+                # Остальные счетчики накапливаются. В обоих случаях ограничиваем значение целью.
+                # Уже награжденное задание сюда не попадет: его пропустили выше.
                 state["value"] = min(definition.target, increment if is_current else state["value"] + increment)
             # 11. Если цель еще не достигнута — счетчик уже увеличили, а награду пока не выдаем
             if state["value"] < definition.target:

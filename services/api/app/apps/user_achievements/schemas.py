@@ -7,7 +7,10 @@ from pydantic import ConfigDict, Field, JsonValue, StrictBool, StrictFloat, Stri
 from services.api.app.apps.progress.schemas import UserResources
 
 
+# Эти модели проверяют JSON до обработки событий. Base запрещает лишние поля по умолчанию.
+# strict=True не позволяет подменить целое ID строкой "123" или значением True.
 PositiveId = Annotated[int, Field(strict=True, gt=0)]
+# Количество может быть целым или дробным, но обязательно положительным и конечным.
 PositiveAmount = (
     Annotated[int, Field(strict=True, gt=0)]
     | Annotated[
@@ -17,6 +20,8 @@ PositiveAmount = (
 )
 
 
+# Строки из поля type, которые понимает бэкенд.
+# Сам тип описывает событие; какие задания оно продвинет, решают filters и counter в конфиге.
 class AchievementEventType(StrEnum):
     ENEMY_KILLED = "enemy.killed"
     ENEMY_SHIELD_REMOVED = "enemy.shield_removed"
@@ -46,7 +51,6 @@ class AchievementEventType(StrEnum):
     # крафт или милл карты или лидера
     ACTOR_TRANSFORMED = "actor.transformed"
 
-    GAME_STARTED = "game.started"
     GAME_WON = "game.won"
     GAME_LOST = "game.lost"
 
@@ -72,6 +76,8 @@ class DecksCheckedEvent(Base):
     data: ResourcesCheckedData
 
 
+# В dict[str, JsonValue] допускается вложенный JSON: словари, массивы, числа и т.д.
+# Это позволяет фильтровать новые поля снимка без отдельной Pydantic-модели на каждое поле карты.
 class DeckEventData(Base):
     # Снимок состава с полным лидером, для общих фильтров по вложенным полям.
     deck: dict[str, JsonValue]
@@ -92,6 +98,8 @@ class DeckDeletedEvent(Base):
     data: DeckEventData
 
 
+# Здесь level — номер купленной ступени, value — ее эффект, maxed — достигнут ли максимум.
+# В отличие от upgrades.checked, это данные конкретного события, переданные клиентом.
 class UpgradePurchasedData(Base):
     upgrade_type: UpgradeType
     upgrade_subtype: UpgradeSubtype
@@ -105,6 +113,8 @@ class UpgradePurchasedEvent(Base):
     data: UpgradePurchasedData
 
 
+# Например, resources={"money": 100, "scraps": 5}; sum может читать путь resources.money.
+# Это сообщение о расходе/доходе, сам баланс при обработке такого события не изменяется.
 class ResourceAmountsData(Base):
     # Фактически потраченные или полученные ресурсы, всегда положительными числами.
     resources: dict[ResourceType, PositiveAmount]
@@ -124,11 +134,6 @@ class GameLostEvent(Base):
     data: GameModeData
 
 
-class GameStartedEvent(Base):
-    type: Literal[AchievementEventType.GAME_STARTED]
-    data: GameModeData
-
-
 class EnemyGraveSummary(Base):
     # Текущий состав кладбища при победе, без лидера и истории убийств.
     total: Annotated[int, Field(strict=True, ge=0)]
@@ -137,6 +142,8 @@ class EnemyGraveSummary(Base):
     gold: Annotated[int, Field(strict=True, ge=0)]
 
 
+# Дополнительные условия победы необязательны: старый/неполный снимок может их не содержать.
+# Отсутствующее поле не должно трактоваться как 0: например, нет leader_uses ≠ лидер не использовался.
 class GameWonData(GameModeData):
     difficulty: Literal["easy", "normal", "hard"] | None = None
     starting_deck: dict[str, JsonValue] | None = None
@@ -192,6 +199,8 @@ class ActionPlayedEvent(Base):
     data: ActionPlayedData
 
 
+# Для крафта/разбора доступны и исходный рецепт, и фактические расходы/доходы.
+# В recipe числа могут быть отрицательными, а spent/gained содержат положительные величины.
 class ActorTransformedData(Base):
     action: Literal["craft", "mill"]
     actor: dict[str, JsonValue]
@@ -279,6 +288,10 @@ class ResourceTransformedEvent(Base):
     data: ResourceTransformedData
 
 
+# A | B | C означает «одна из моделей событий».
+# Field(discriminator="type") говорит Pydantic выбрать модель по значению type.
+# Например, action.played → ActionPlayedEvent → проверяем data по ActionPlayedData.
+# Annotated связывает сам тип с этой дополнительной настройкой выбора.
 AchievementEvent = Annotated[
     ResourcesCheckedEvent
     | DecksCheckedEvent
@@ -287,7 +300,6 @@ AchievementEvent = Annotated[
     | DeckDeletedEvent
     | UpgradesCheckedEvent
     | UpgradePurchasedEvent
-    | GameStartedEvent
     | GameWonEvent
     | GameLostEvent
     | ActionPlayedEvent
@@ -308,14 +320,18 @@ AchievementEvent = Annotated[
 ]
 
 
+# Пачка проверяется целиком. Пустой список допустим: он не продвинет задания.
 class AchievementEventsRequest(Base):
     events: list[AchievementEvent]
 
 
+# Награды задаются только целыми неотрицательными ресурсами, как колонки баланса в БД.
 class AchievementRewards(Base):
     resources: dict[ResourceType, Annotated[int, Field(strict=True, ge=0)]]
 
 
+# Одна награда за одно выполненное задание. Сейчас поддерживаются только постоянные задания.
+# period всегда null: ежедневные и еженедельные периоды пока не обрабатываем.
 class GrantedAchievementReward(Base):
     achievement_id: str
     period_type: Literal["permanent"]
@@ -323,32 +339,43 @@ class GrantedAchievementReward(Base):
     rewards: AchievementRewards
 
 
+# user_achievements — весь прогресс после обработки, granted_rewards — только новые награды.
+# user_resources — весь итоговый баланс, если были награды, иначе null.
+# Все три ключа обязательны; id событий и подтверждения отдельных событий не используются.
 class AchievementEventsResponse(Base):
     user_achievements: dict
     granted_rewards: list[GrantedAchievementReward]
     user_resources: UserResources | None
 
 
+# count: +1 за каждое событие, прошедшее фильтры.
 class CountCounter(Base):
     type: Literal["count"]
 
 
+# current: записываем текущее значение поля из серверного снимка вместо накопления.
+# Например, resources.money=500 → value=500 (но не выше target).
 class CurrentCounter(Base):
     type: Literal["current"]
     field: Annotated[str, Field(min_length=1)]
 
 
+# unique: храним увиденные значения field в state.seen, повторное значение не прибавляет прогресс.
 class UniqueCounter(Base):
     type: Literal["unique"]
     field: Annotated[str, Field(min_length=1)]
 
 
+# sum: прибавляем число из поля события. Например, gained.money или enemy.data.hp.
 class SumCounter(Base):
     type: Literal["sum"]
     field: Annotated[str, Field(min_length=1)]
 
 
 # Новые поля карты не требуют новых моделей. Типизируем только язык условий.
+# Короткий фильтр — скаляр: {"actor.color": "Bronze"}.
+# Расширенный — условие: {"actor.data.damage": {"type": "gte", "value": 10}}.
+# Strict-типы нужны, чтобы True, 1 и "1" не превращались друг в друга при проверке конфига.
 FilterScalar = StrictStr | StrictBool | StrictInt | Annotated[StrictFloat, Field(allow_inf_nan=False)] | None
 FilterNumber = StrictInt | Annotated[StrictFloat, Field(allow_inf_nan=False)]
 
@@ -373,17 +400,21 @@ class ExistsFilter(Base):
     value: StrictBool
 
 
+# Здесь type выбирает уже оператор фильтра, а не вид игрового события.
 FilterCondition = Annotated[
     EqualityFilter | ComparisonFilter | InFilter | ExistsFilter,
     Field(discriminator="type"),
 ]
 
 
+# Событие и условия, которые обрывают текущую серию. Таких правил может быть несколько.
 class StreakReset(Base):
     event: AchievementEventType
     filters: dict[str, FilterScalar | FilterCondition] = Field(default_factory=dict)
 
 
+# streak: length — длина одной серии, а target самого задания — количество полных серий.
+# reset обязателен и непустой: описывает, когда незавершенная серия сбрасывается.
 class StreakCounter(Base):
     type: Literal["streak"]
     length: Annotated[int, Field(strict=True, gt=0)]
@@ -391,9 +422,7 @@ class StreakCounter(Base):
 
 
 class AchievementDefinition(Base):
-    # Метаданные интерфейса; прогресс по-прежнему хранится по id задания.
-    group: Annotated[StrictStr, Field(min_length=1, pattern=r"\S")] | None = None
-
+    # title, ordering и другие поля интерфейса оставляем в конфиге, но не берем в расчетную модель.
     model_config = ConfigDict(extra="ignore")
 
     id: str
@@ -402,7 +431,11 @@ class AchievementDefinition(Base):
     counter: Annotated[CountCounter | SumCounter | CurrentCounter | UniqueCounter | StreakCounter, Field(discriminator="type")]
     filters: dict[str, FilterScalar | FilterCondition] = Field(default_factory=dict)
     rewards: AchievementRewards
+    # Метаданные интерфейса; прогресс по-прежнему хранится по id задания.
+    group: Annotated[StrictStr, Field(min_length=1, pattern=r"\S")] | None = None
 
+    # Эта проверка запускается после разбора полей модели. Она проверяет сочетание event + counter,
+    # потому что по отдельности оба поля могут быть корректными, а вместе — бессмысленными.
     @model_validator(mode="after")
     def validate_current_counter(self) -> "AchievementDefinition":
         # Проверки текущего состояния используют current, а не накопление событий.
@@ -412,11 +445,14 @@ class AchievementDefinition(Base):
             AchievementEventType.UPGRADES_CHECKED,
             AchievementEventType.DECKS_CHECKED,
         }
+        # Разрешаем только пары: checked-событие + current ИЛИ обычное событие + другой счетчик.
         if is_current != (self.event in checked_events):
             raise ValueError("current counter requires a state-check event and vice versa")
+        # Число разных предметов и полных серий не может иметь дробную цель вроде 2.5.
         if isinstance(self.counter, (UniqueCounter, StreakCounter)) and self.target != int(self.target):
             raise ValueError("unique/streak counter requires an integer target")
         if is_current:
+            # У серверных снимков заранее известная структура. Проверяем путь еще при чтении конфига.
             parts = self.counter.field.split(".")
             if self.event == AchievementEventType.RESOURCES_CHECKED:
                 if len(parts) != 2 or parts[0] != "resources":
@@ -425,9 +461,11 @@ class AchievementDefinition(Base):
             elif self.event == AchievementEventType.DECKS_CHECKED:
                 if self.counter.field != "decks.count":
                     raise ValueError("deck current field must be decks.count")
+            # Прокачка: upgrades.<тип>.<подтип>.level либо .value.
             elif len(parts) == 4 and parts[0] == "upgrades" and parts[3] in {"level", "value"}:
                 UpgradeType(parts[1])
                 UpgradeSubtype(parts[2])
+            # Сводка: summary.all.maxed_count, summary.non_settings.all_maxed и т.д.
             elif len(parts) == 3 and parts[0] == "summary" and parts[2] in {
                 "total_count", "maxed_count", "all_maxed",
             }:
