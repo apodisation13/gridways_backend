@@ -23,6 +23,11 @@ PositiveAmount = (
 # Строки из поля type, которые понимает бэкенд.
 # Сам тип описывает событие; какие задания оно продвинет, решают filters и counter в конфиге.
 class AchievementEventType(StrEnum):
+    # событие выигранной игры - содержит режим, сложность, убитых врагов, инфу о колоде
+    GAME_WON = "game.won"  # GameWonEvent - описывает эти данные
+    GAME_LOST = "game.lost"
+
+
     ENEMY_KILLED = "enemy.killed"
     ENEMY_SHIELD_REMOVED = "enemy.shield_removed"
     ENEMY_ARMOR_REMOVED = "enemy.armor_removed"
@@ -141,9 +146,14 @@ class GameModeData(Base):
     mode: LeaderboardGameMode | Literal["normal"]
 
 
+class GameLostData(Base):
+    # Единственное поле поражения: режим боя для фильтров сброса серии.
+    mode: LeaderboardGameMode | Literal["normal"]
+
+
 class GameLostEvent(Base):
     type: Literal[AchievementEventType.GAME_LOST]
-    data: GameModeData
+    data: GameLostData
 
 
 class EnemyGraveSummary(Base):
