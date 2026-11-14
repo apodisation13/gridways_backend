@@ -129,10 +129,19 @@ class GameStartedEvent(Base):
     data: GameModeData
 
 
+class EnemyGraveSummary(Base):
+    # Текущий состав кладбища при победе, без лидера и истории убийств.
+    total: Annotated[int, Field(strict=True, ge=0)]
+    bronze: Annotated[int, Field(strict=True, ge=0)]
+    silver: Annotated[int, Field(strict=True, ge=0)]
+    gold: Annotated[int, Field(strict=True, ge=0)]
+
+
 class GameWonData(GameModeData):
     difficulty: Literal["easy", "normal", "hard"] | None = None
     starting_deck: dict[str, JsonValue] | None = None
     leader_uses: Annotated[int, Field(strict=True, ge=0)] | None = None
+    enemy_grave: EnemyGraveSummary | None = None
 
 
 class GameWonEvent(Base):
