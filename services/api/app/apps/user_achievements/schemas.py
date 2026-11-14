@@ -18,6 +18,9 @@ PositiveAmount = (
 
 
 class AchievementEventType(StrEnum):
+    ENEMY_KILLED = "enemy.killed"
+    ENEMY_SHIELD_REMOVED = "enemy.shield_removed"
+    ENEMY_ARMOR_REMOVED = "enemy.armor_removed"
     # сard or leader played
     ACTION_PLAYED = "action.played"
     PASSIVE_TRIGGERED = "passive.triggered"
@@ -151,6 +154,30 @@ class PassiveTriggeredEvent(Base):
     data: PassiveTriggeredData
 
 
+class EnemyEventData(GameModeData):
+    # Полный снимок до удаления или снятия защиты, для общих фильтров.
+    enemy: dict[str, JsonValue]
+
+
+class EnemyKilledEvent(Base):
+    type: Literal[AchievementEventType.ENEMY_KILLED]
+    data: EnemyEventData
+
+
+class EnemyShieldRemovedEvent(Base):
+    type: Literal[AchievementEventType.ENEMY_SHIELD_REMOVED]
+    data: EnemyEventData
+
+
+class EnemyArmorRemovedData(EnemyEventData):
+    amount: PositiveAmount
+
+
+class EnemyArmorRemovedEvent(Base):
+    type: Literal[AchievementEventType.ENEMY_ARMOR_REMOVED]
+    data: EnemyArmorRemovedData
+
+
 class ActionPlayedEvent(Base):
     type: Literal[AchievementEventType.ACTION_PLAYED]
     data: ActionPlayedData
@@ -255,6 +282,9 @@ AchievementEvent = Annotated[
     | GameWonEvent
     | GameLostEvent
     | ActionPlayedEvent
+    | EnemyKilledEvent
+    | EnemyShieldRemovedEvent
+    | EnemyArmorRemovedEvent
     | PassiveTriggeredEvent
     | ActorTransformedEvent
     | ResourceSpentEvent
@@ -348,7 +378,7 @@ class StreakReset(Base):
 class StreakCounter(Base):
     type: Literal["streak"]
     length: Annotated[int, Field(strict=True, gt=0)]
-    reset: StreakReset
+    reset: Annotated[list[StreakReset], Field(min_length=1)]
 
 
 class AchievementDefinition(Base):

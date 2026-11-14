@@ -84,8 +84,11 @@ def apply_events(
                 continue
             counter = definition.counter
             if isinstance(counter, StreakCounter):
-                if counter.reset.event == event.type and matches_filters(
-                    data, counter.reset.model_dump(mode="json")["filters"],
+                if any(
+                    reset.event == event.type and matches_filters(
+                        data, reset.model_dump(mode="json")["filters"],
+                    )
+                    for reset in counter.reset
                 ):
                     state = progress.get("permanent", {}).get(definition.id)
                     # Завершённые контракты не сбрасываем, полные серии сохраняем.
