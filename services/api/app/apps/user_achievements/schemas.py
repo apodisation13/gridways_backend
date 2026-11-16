@@ -174,9 +174,9 @@ class GameWonEvent(Base):
     data: GameWonData
 
 
-class ActionPlayedData(GameModeData):
-    # Весь снимок карты/лидера, включая вложенные поля и массивы.
-    actor: dict[str, JsonValue]
+class ActionPlayedData(Base):
+    actor: dict[str, JsonValue] # Весь снимок карты/лидера, включая вложенные поля и массивы.
+    mode: LeaderboardGameMode | Literal["normal"]  # режим игры
 
 
 class PassiveTriggeredData(ActionPlayedData):
