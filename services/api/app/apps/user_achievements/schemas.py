@@ -199,9 +199,10 @@ class PassiveTriggeredEvent(Base):
     data: PassiveTriggeredData
 
 
-class EnemyEventData(GameModeData):
+class EnemyEventData(Base):
     # Полный снимок до удаления или снятия защиты, для общих фильтров.
     enemy: dict[str, JsonValue]
+    mode: LeaderboardGameMode | Literal["normal"]
 
 
 class EnemyKilledEvent(Base):
