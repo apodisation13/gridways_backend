@@ -33,8 +33,8 @@ class AchievementEventType(StrEnum):
     # сработала пассивка любой карты игрока (в руке, в сбросе, в колоде, лидера, разовая в начале, от игры карты)
     PASSIVE_TRIGGERED = "passive.triggered"  # PassiveTriggeredEvent - данные
 
-
-    ENEMY_KILLED = "enemy.killed"
+    # убили врага или лидера врагов
+    ENEMY_KILLED = "enemy.killed"  # EnemyKilledEvent - там враг (целиком) и режим игры
     ENEMY_SHIELD_REMOVED = "enemy.shield_removed"
     ENEMY_ARMOR_REMOVED = "enemy.armor_removed"
 
@@ -210,13 +210,20 @@ class EnemyKilledEvent(Base):
     data: EnemyEventData
 
 
+class EnemyShieldRemovedData(Base):
+    enemy: dict[str, JsonValue]  # Полный снимок врага до снятия щита.
+    mode: LeaderboardGameMode | Literal["normal"]
+
+
 class EnemyShieldRemovedEvent(Base):
     type: Literal[AchievementEventType.ENEMY_SHIELD_REMOVED]
-    data: EnemyEventData
+    data: EnemyShieldRemovedData
 
 
-class EnemyArmorRemovedData(EnemyEventData):
-    amount: PositiveAmount
+class EnemyArmorRemovedData(Base):
+    enemy: dict[str, JsonValue]  # Полный снимок врага до снятия брони.
+    mode: LeaderboardGameMode | Literal["normal"]
+    amount: PositiveAmount  # Фактически снятое количество, не запрошенный урон.
 
 
 class EnemyArmorRemovedEvent(Base):
