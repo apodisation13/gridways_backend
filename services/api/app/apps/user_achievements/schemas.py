@@ -25,15 +25,20 @@ PositiveAmount = (
 class AchievementEventType(StrEnum):
     # событие выигранной игры - содержит режим, сложность, убитых врагов, инфу о колоде
     GAME_WON = "game.won"  # GameWonEvent - описывает эти данные
-    GAME_LOST = "game.lost"
+    GAME_LOST = "game.lost"  # GameLostEvent - описывает данные
+
+    # сыграна вообще любая карта в любой игре в любом режиме
+    ACTION_PLAYED = "action.played"  # ActionPlayedEvent - данные
+
+    # сработала пассивка любой карты игрока (в руке, в сбросе, в колоде, лидера, разовая в начале, от игры карты)
+    PASSIVE_TRIGGERED = "passive.triggered"  # PassiveTriggeredEvent - данные
 
 
     ENEMY_KILLED = "enemy.killed"
     ENEMY_SHIELD_REMOVED = "enemy.shield_removed"
     ENEMY_ARMOR_REMOVED = "enemy.armor_removed"
-    # сard or leader played
-    ACTION_PLAYED = "action.played"
-    PASSIVE_TRIGGERED = "passive.triggered"
+
+
     # any resource spent or gained
     RESOURCE_SPENT = "resource.spent"
     RESOURCE_GAINED = "resource.gained"
@@ -179,8 +184,14 @@ class ActionPlayedData(Base):
     mode: LeaderboardGameMode | Literal["normal"]  # режим игры
 
 
-class PassiveTriggeredData(ActionPlayedData):
-    location: Literal["hand", "deck", "grave", "passive_once"]
+class PassiveTriggeredData(Base):
+    actor: dict[str, JsonValue]  # Полный снимок владельца пассивки до эффекта.
+    mode: LeaderboardGameMode | Literal["normal"]
+    # Зона обычной пассивки либо отдельная ситуация запуска.
+    location: Literal[
+        "hand", "deck", "grave", "passive_once",
+        "passive_upon_playing_a_card", "leader_passive_upon_playing_a_card",
+    ]
 
 
 class PassiveTriggeredEvent(Base):
