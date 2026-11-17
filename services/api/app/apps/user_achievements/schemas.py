@@ -91,9 +91,12 @@ class DeckComposition(Base):
     leader: dict[str, JsonValue]
 
 
-class UserDeckSnapshot(DeckComposition):
+class UserDeckSnapshot(Base):
     # Создание/редактирование присылает эти поля, удаление — ещё ID и поля колоды.
     model_config = ConfigDict(extra="allow")
+
+    cards: list[dict[str, JsonValue]]
+    leader: dict[str, JsonValue]
     name: StrictStr
     health: StrictInt | Annotated[StrictFloat, Field(allow_inf_nan=False)]
 
