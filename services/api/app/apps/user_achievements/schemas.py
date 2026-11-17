@@ -38,6 +38,13 @@ class AchievementEventType(StrEnum):
     ENEMY_SHIELD_REMOVED = "enemy.shield_removed"
     ENEMY_ARMOR_REMOVED = "enemy.armor_removed"
 
+    # события с колодами - создание, сохранение, удаление
+    DECK_CREATED = "deck.created"
+    DECK_SAVED = "deck.saved"
+    DECK_DELETED = "deck.deleted"
+    # а это проверка чтобы выполнить контракты на то, сколько колод у пользователя сейчас
+    DECKS_CHECKED = "decks.checked"
+
 
     # any resource spent or gained
     RESOURCE_SPENT = "resource.spent"
@@ -48,10 +55,6 @@ class AchievementEventType(StrEnum):
     INVENTORY_RESTORED = "inventory.restored"
     ARENA_UPGRADE_PURCHASED = "arena.upgrade.purchased"
     ARENA_LEVEL_REACHED = "arena.level.reached"
-    DECK_CREATED = "deck.created"
-    DECK_SAVED = "deck.saved"
-    DECK_DELETED = "deck.deleted"
-    DECKS_CHECKED = "decks.checked"
     RESOURCE_TRANSFORMED = "resource.transformed"
 
     RESOURCES_CHECKED = "resources.checked"
