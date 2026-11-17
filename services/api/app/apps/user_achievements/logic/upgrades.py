@@ -32,7 +32,9 @@ def build_upgrade_snapshot(config: dict, user: dict) -> dict:
             # Отсутствующее поле next не означает максимум: нужен именно явно указанный null.
             maxed = "next" in entry and entry["next"] is None
             snapshot["upgrades"][upgrade_type][subtype] = {
-                "level": level, "value": entry["value"], "maxed": maxed,
+                "level": level,
+                "value": entry["value"],
+                "maxed": maxed,
             }
             # int(True) = 1, int(False) = 0: так считаем число прокачек на максимуме.
             summary["maxed_count"] += int(maxed)

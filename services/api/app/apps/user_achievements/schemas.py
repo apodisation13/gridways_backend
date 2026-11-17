@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import Annotated, Literal
 
 from lib.utils.schemas import Base
-from lib.utils.schemas.game import ResourceType, UpgradeSubtype, UpgradeType, LeaderboardGameMode, LevelDifficulty
+from lib.utils.schemas.game import LeaderboardGameMode, LevelDifficulty, ResourceType, UpgradeSubtype, UpgradeType
 from pydantic import ConfigDict, Field, JsonValue, StrictBool, StrictFloat, StrictInt, StrictStr, model_validator
 from services.api.app.apps.progress.schemas import UserResources
 
@@ -187,7 +187,7 @@ class GameWonEvent(Base):
 
 
 class ActionPlayedData(Base):
-    actor: dict[str, JsonValue] # Весь снимок карты/лидера, включая вложенные поля и массивы.
+    actor: dict[str, JsonValue]  # Весь снимок карты/лидера, включая вложенные поля и массивы.
     mode: LeaderboardGameMode | Literal["normal"]  # режим игры
 
 
@@ -196,8 +196,12 @@ class PassiveTriggeredData(Base):
     mode: LeaderboardGameMode | Literal["normal"]
     # Зона обычной пассивки либо отдельная ситуация запуска.
     location: Literal[
-        "hand", "deck", "grave", "passive_once",
-        "passive_upon_playing_a_card", "leader_passive_upon_playing_a_card",
+        "hand",
+        "deck",
+        "grave",
+        "passive_once",
+        "passive_upon_playing_a_card",
+        "leader_passive_upon_playing_a_card",
     ]
 
 
@@ -472,7 +476,10 @@ class AchievementDefinition(Base):
     id: str
     event: AchievementEventType
     target: PositiveAmount
-    counter: Annotated[CountCounter | SumCounter | CurrentCounter | UniqueCounter | StreakCounter, Field(discriminator="type")]
+    counter: Annotated[
+        CountCounter | SumCounter | CurrentCounter | UniqueCounter | StreakCounter,
+        Field(discriminator="type"),
+    ]
     filters: dict[str, FilterScalar | FilterCondition] = Field(default_factory=dict)
     rewards: AchievementRewards
     # Метаданные интерфейса; прогресс по-прежнему хранится по id задания.
@@ -510,9 +517,16 @@ class AchievementDefinition(Base):
                 UpgradeType(parts[1])
                 UpgradeSubtype(parts[2])
             # Сводка: summary.all.maxed_count, summary.non_settings.all_maxed и т.д.
-            elif len(parts) == 3 and parts[0] == "summary" and parts[2] in {
-                "total_count", "maxed_count", "all_maxed",
-            }:
+            elif (
+                len(parts) == 3
+                and parts[0] == "summary"
+                and parts[2]
+                in {
+                    "total_count",
+                    "maxed_count",
+                    "all_maxed",
+                }
+            ):
                 if parts[1] not in {"all", "non_settings"}:
                     UpgradeType(parts[1])
             else:

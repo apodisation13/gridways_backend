@@ -1,7 +1,6 @@
 from lib.utils.db.pool import Database
 from services.api.app.apps.game_data.logic import game_const as game_const_logic
 from services.api.app.apps.progress import logic as progress_logic
-from services.api.app.apps.upgrades import logic as upgrades_logic
 from services.api.app.apps.user_achievements.logic.events import apply_events, get_permanent_definitions
 from services.api.app.apps.user_achievements.logic.upgrades import build_upgrade_snapshot
 from services.api.app.apps.user_achievements.schemas import (
@@ -49,7 +48,8 @@ class AchievementsService:
                 # до выдачи награды. users берём до остальных блокировок.
                 await connection.fetchval("SELECT id FROM users WHERE id = $1 FOR UPDATE", user_id)
                 count = await connection.fetchval(
-                    """SELECT count(*) FROM user_decks WHERE user_id = $1""", user_id,
+                    """SELECT count(*) FROM user_decks WHERE user_id = $1""",
+                    user_id,
                 )
                 # Базовая колода входит в хранение наравне с пользовательскими.
                 # В apply_events это станет {"decks": {"count": ...}}, путь счетчика — decks.count.
@@ -71,7 +71,8 @@ class AchievementsService:
                 # Как при покупке, сначала блокируем прокачки, затем ресурсы.
                 # Подтверждение опирается на БД, а не на переданный фронтом снимок.
                 user_upgrades = await connection.fetchval(
-                    """SELECT data::jsonb FROM user_upgrades WHERE id = $1 FOR UPDATE""", user_id,
+                    """SELECT data::jsonb FROM user_upgrades WHERE id = $1 FOR UPDATE""",
+                    user_id,
                 )
                 upgrades = build_upgrade_snapshot(game_constants["upgrades"], user_upgrades)
 

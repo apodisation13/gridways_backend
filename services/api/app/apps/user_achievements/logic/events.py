@@ -8,8 +8,8 @@ from services.api.app.apps.user_achievements.schemas import (
     AchievementEventType,
     CurrentCounter,
     GrantedAchievementReward,
-    SumCounter,
     StreakCounter,
+    SumCounter,
     UniqueCounter,
 )
 
@@ -86,7 +86,8 @@ def apply_events(
             # Обычное игровое событие не должно менять такой счетчик.
             is_current = isinstance(definition.counter, CurrentCounter)
             if is_current and event.type not in {
-                AchievementEventType.RESOURCES_CHECKED, AchievementEventType.UPGRADES_CHECKED,
+                AchievementEventType.RESOURCES_CHECKED,
+                AchievementEventType.UPGRADES_CHECKED,
                 AchievementEventType.DECKS_CHECKED,
             }:
                 continue
@@ -95,8 +96,10 @@ def apply_events(
             # Например, задание считает game.won, но сбрасывает текущую серию на game.lost.
             if isinstance(counter, StreakCounter):
                 if any(
-                    reset.event == event.type and matches_filters(
-                        data, reset.model_dump(mode="json")["filters"],
+                    reset.event == event.type
+                    and matches_filters(
+                        data,
+                        reset.model_dump(mode="json")["filters"],
                     )
                     for reset in counter.reset
                 ):
