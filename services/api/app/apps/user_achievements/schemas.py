@@ -45,6 +45,9 @@ class AchievementEventType(StrEnum):
     # а это проверка чтобы выполнить контракты на то, сколько колод у пользователя сейчас
     DECKS_CHECKED = "decks.checked"
 
+    # проверка текущего значения ресурсов и прокачек
+    RESOURCES_CHECKED = "resources.checked"
+    UPGRADES_CHECKED = "upgrades.checked"
 
     # any resource spent or gained
     RESOURCE_SPENT = "resource.spent"
@@ -57,8 +60,6 @@ class AchievementEventType(StrEnum):
     ARENA_LEVEL_REACHED = "arena.level.reached"
     RESOURCE_TRANSFORMED = "resource.transformed"
 
-    RESOURCES_CHECKED = "resources.checked"
-    UPGRADES_CHECKED = "upgrades.checked"
     UPGRADE_PURCHASED = "upgrade.purchased"
 
     # крафт или милл карты или лидера
