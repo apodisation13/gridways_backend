@@ -10,6 +10,7 @@ from services.api.app.apps.progress.service import UserProgressService
 from services.api.app.apps.purchases.service import PurchasesService
 from services.api.app.apps.stats.service import StatsService
 from services.api.app.apps.upgrades.service import UpgradesService
+from services.api.app.apps.user_achievements.service import AchievementsService
 from services.api.app.config import Config
 
 
@@ -41,6 +42,16 @@ async def get_auth_service(
     config: Config = Depends(get_config),
 ) -> AuthService:
     return AuthService(
+        db_pool=db_pool,
+        config=config,
+    )
+
+
+async def get_achievements_service(
+    db_pool: Database = Depends(get_db),
+    config: Config = Depends(get_config),
+) -> AchievementsService:
+    return AchievementsService(
         db_pool=db_pool,
         config=config,
     )

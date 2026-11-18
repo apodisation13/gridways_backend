@@ -1,7 +1,10 @@
+from datetime import date, timedelta
+
 import factory
 from lib.tests.factories import BaseModelFactory, TimeStampMixinFactory, UserFactory
 from lib.utils.models import (
     Ability,
+    AchievementSet,
     Card,
     CardDeck,
     Color,
@@ -24,6 +27,7 @@ from lib.utils.models import (
     Season,
     SeasonRelatedSeasons,
     Type,
+    UserAchievements,
     UserCard,
     UserDeck,
     UserInventory,
@@ -357,3 +361,20 @@ class UserInventoryFactory(BaseModelFactory):
 
     id = factory.SubFactory(UserFactory)
     data = {"slots": []}
+
+
+class AchievementSetFactory(BaseModelFactory):
+    class Meta:
+        model = AchievementSet
+
+    period_type = "daily"
+    period_start = factory.Sequence(lambda n: date(2026, 1, 1) + timedelta(days=n))
+    task_ids = factory.LazyFunction(list)
+
+
+class UserAchievementsFactory(BaseModelFactory):
+    class Meta:
+        model = UserAchievements
+
+    id = factory.SubFactory(UserFactory)
+    progress = factory.LazyFunction(dict)

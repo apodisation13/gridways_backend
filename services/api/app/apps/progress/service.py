@@ -29,6 +29,7 @@ from services.api.app.apps.progress.schemas import (
     UserResources,
 )
 from services.api.app.apps.upgrades import logic as user_upgrades_logic
+from services.api.app.apps.user_achievements import logic as achievements_logic
 from services.api.app.config import Config
 from services.api.app.exceptions.exceptions import (
     CraftMillCardProcessError,
@@ -140,6 +141,11 @@ class UserProgressService:
                 user_id=user_id,
             )
 
+            user_achievements = await achievements_logic.get_user_achievements(
+                connection=connection,
+                user_id=user_id,
+            )
+
         return UserProgressResponse(
             user_resources=user_resources,
             user_cards=user_cards,
@@ -149,6 +155,7 @@ class UserProgressService:
             user_inventory=user_inventory,
             user_preferences=user_preferences,
             user_upgrades=user_upgrades,
+            user_achievements=user_achievements,
         )
 
     async def create_user_deck(
