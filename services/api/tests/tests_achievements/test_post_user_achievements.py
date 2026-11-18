@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
@@ -26,7 +27,10 @@ def task(key: str, target: int, event: str = "action.played") -> dict:
     }
 
 
-CARD = {"type": "action.played", "data": {"actor": {"faction": "Neutral", "id": 123, "color": "Bronze"}}}
+CARD = {
+    "type": "action.played",
+    "data": {"mode": "normal", "actor": {"faction": "Neutral", "id": 123, "color": "Bronze"}},
+}
 
 
 @pytest_asyncio.fixture
@@ -36,6 +40,8 @@ async def achievements_setup(
     # fixtures for test
     game_constants_factory,
     user_resource_factory,
+    user_achievements_factory,
+    user_upgrades_factory,
 ) -> tuple[int, dict[str, str]]:
     user_id = user_login_fixture["id"]
     data = {
@@ -51,6 +57,8 @@ async def achievements_setup(
     }
     await game_constants_factory(data=data)
     await user_resource_factory(id=user_id, money=100)
+    await user_achievements_factory(id=user_id, progress={})
+    await user_upgrades_factory(id=user_id)
     return user_id, {"Authorization": f"Bearer {user_login_fixture['token']['access_token']}"}
 
 
@@ -65,11 +73,14 @@ class TestPostUserAchievements:
         db_connection,
         # fixtures for test
         achievements_setup,
-        user_achievements_factory,
     ):
         user_id, headers = achievements_setup
 
-        await user_achievements_factory(id=user_id, progress={"daily": {"period": "2026-11-10", "tasks": {}}})
+        await db_connection.execute(
+            "UPDATE user_achievements SET progress = $2::jsonb WHERE id = $1",
+            user_id,
+            {"daily": {"period": "2026-11-10", "tasks": {}}},
+        )
 
         response = await client.post(
             self.endpoint.format(user_id=user_id),
@@ -77,7 +88,7 @@ class TestPostUserAchievements:
             json={"events": [CARD]},
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 200, response.text
 
         response_json = response.json()
         assert set(response_json) == {"user_achievements", "granted_rewards", "user_resources"}
@@ -95,7 +106,7 @@ class TestPostUserAchievements:
             json={"events": [CARD, CARD]},
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 200, response.text
 
         response_json = response.json()
         assert response_json["user_resources"]["money"] == 120
@@ -110,7 +121,7 @@ class TestPostUserAchievements:
         state = response_json["user_achievements"]["permanent"]["bronze_2"]
         assert state["value"] == 2
         assert state["completed_at"] == state["reward_granted_at"]
-        assert state["reward_granted_at"].endswith("Z")
+        assert datetime.fromisoformat(state["reward_granted_at"]).utcoffset() == timedelta(0)
         assert response_json["user_achievements"]["daily"] == {"period": "2026-11-10", "tasks": {}}
 
         response = await client.post(
@@ -135,8 +146,11 @@ class TestPostUserAchievements:
         user_id, headers = achievements_setup
 
         events = [
-            {"type": "action.played", "data": {"actor": {"id": 7}}},
-            {"type": "action.played", "data": {"actor": {"faction": "Neutral", "id": 2, "color": "Silver"}}},
+            {"type": "action.played", "data": {"mode": "normal", "actor": {"id": 7}}},
+            {
+                "type": "action.played",
+                "data": {"mode": "normal", "actor": {"faction": "Neutral", "id": 2, "color": "Silver"}},
+            },
             {"type": "resource.spent", "data": {"resources": {"money": 40.5}}},
             {"type": "resource.spent", "data": {"resources": {"money": 60}}},
         ]
@@ -147,7 +161,7 @@ class TestPostUserAchievements:
             json={"events": events},
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 200, response.text
 
         response_json = response.json()
         assert set(response_json["user_achievements"]["permanent"]) == {"spend_100"}
@@ -158,9 +172,10 @@ class TestPostUserAchievements:
         "invalid",
         [
             {"type": "unknown", "data": {}},
-            {"type": "action.played", "data": {}},
-            {"type": "action.played", "data": {"actor": []}},
-            {"type": "action.played", "data": {"actor": None}},
+            {"type": "action.played", "data": {"mode": "normal"}},
+            {"type": "action.played", "data": {"actor": {"id": 123}}},
+            {"type": "action.played", "data": {"mode": "normal", "actor": []}},
+            {"type": "action.played", "data": {"mode": "normal", "actor": None}},
             {"type": "resource.spent", "data": {"resources": {"unknown": 1}}},
             {"type": "resource.spent", "data": {"resources": {"money": -1}}},
             {"type": "resource.spent", "data": {"resources": {"money": "10"}}},
@@ -187,7 +202,7 @@ class TestPostUserAchievements:
 
         assert response.status_code == 422
 
-        assert await db_connection.fetchval("SELECT progress FROM user_achievements WHERE id = $1", user_id) is None
+        assert await db_connection.fetchval("SELECT progress FROM user_achievements WHERE id = $1", user_id) == {}
 
         assert await db_connection.fetchval("SELECT money FROM user_resources WHERE id = $1", user_id) == 100
 
@@ -246,6 +261,6 @@ class TestPostUserAchievements:
         ):
             await service.process_events(user_id, events)
 
-        assert await db_connection.fetchval("SELECT progress FROM user_achievements WHERE id = $1", user_id) is None
+        assert await db_connection.fetchval("SELECT progress FROM user_achievements WHERE id = $1", user_id) == {}
 
         assert await db_connection.fetchval("SELECT money FROM user_resources WHERE id = $1", user_id) == 100
