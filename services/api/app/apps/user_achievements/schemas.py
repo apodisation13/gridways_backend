@@ -150,11 +150,6 @@ class ResourceAmountsData(Base):
     item: ResourceType | None = None
 
 
-class GameModeData(Base):
-    # normal — имя обычного режима в контрактах; season оставляем для совместимости.
-    mode: LeaderboardGameMode | Literal["normal"]
-
-
 class GameLostData(Base):
     # Единственное поле поражения: режим боя для фильтров сброса серии.
     mode: LeaderboardGameMode | Literal["normal"]
@@ -282,13 +277,15 @@ class ResourceOpenedEvent(Base):
     data: ResourceOpenedData
 
 
-class InventoryUsedData(GameModeData):
+class InventoryUsedData(Base):
+    mode: LeaderboardGameMode | Literal["normal"]
     item: ResourceType
     # Только фактически измеренные результаты. Пустой словарь допустим.
     result: dict[str, Annotated[int, Field(strict=True, ge=0)]]
 
 
-class InventoryRestoredData(GameModeData):
+class InventoryRestoredData(Base):
+    mode: LeaderboardGameMode | Literal["normal"]
     item: ResourceType
 
 
