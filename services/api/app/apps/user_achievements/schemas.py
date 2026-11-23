@@ -168,11 +168,18 @@ class EnemyGraveSummary(Base):
     gold: Annotated[int, Field(strict=True, ge=0)]
 
 
+class AchievementBattleStats(Base):
+    # Статистика одного боя. Защита бронёй/неуязвимостью не является уроном HP.
+    leader_uses: int = Field(strict=True, ge=0)
+    damage_taken: int | float = Field(ge=0, allow_inf_nan=False)
+    enemy_passives_in_field: int = Field(strict=True, ge=0)
+
+
 class GameWonData(Base):
     mode: LeaderboardGameMode | Literal["normal"]
     difficulty: LevelDifficulty
     starting_deck: DeckComposition
-    leader_uses: int = Field(strict=True, ge=0)
+    battleStats: AchievementBattleStats
     enemy_grave: EnemyGraveSummary
 
 
