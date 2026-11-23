@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 from services.api.app.apps.user_achievements.logic.decks import build_deck_summary
 from services.api.app.apps.user_achievements.logic.filters import get_field, is_number, matches_filters
+from services.api.app.apps.user_achievements.logic.unique_values import has_unique_value, unique_value
 from services.api.app.apps.user_achievements.schemas import (
     AchievementDefinition,
     AchievementEvent,
@@ -152,13 +153,13 @@ def apply_events(
             elif isinstance(definition.counter, UniqueCounter):
                 # unique: считаем разные значения поля, а не количество событий.
                 # Например, actor.id: карта 7, карта 7, карта 9 дадут прогресс 2, а не 3.
-                item = get_field(data, definition.counter.field)
-                # Только названия и числовые ID; bool/null/объекты не являются ID.
-                if not isinstance(item, str) and not is_number(item):
+                raw = get_field(data, definition.counter.field)
+                item = unique_value(raw)
+                if item is None:
                     continue
                 # seen сохраняется в progress и попадет в БД, поэтому уникальность работает между запросами.
                 seen = state.setdefault("seen", [])
-                if item in seen:
+                if has_unique_value(seen, raw, item):
                     continue
                 seen.append(item)
                 state["value"] = min(definition.target, len(seen))
@@ -166,11 +167,15 @@ def apply_events(
                 # count: +1 за событие. sum: прибавляем число из counter.field, например resources.money.
                 # current: тем же способом читаем поле, но дальше ЗАМЕНЯЕМ счетчик текущим значением.
                 # get_field понимает вложенные пути: actor.data.damage, starting_deck.summary.cards_count.
-                increment = (
-                    get_field(data, definition.counter.field)
-                    if isinstance(definition.counter, (SumCounter, CurrentCounter))
-                    else 1
-                )
+                if isinstance(counter, CurrentCounter) and counter.fields is not None:
+                    amounts = [get_field(data, field) for field in counter.fields]
+                    if any(not is_number(amount) or amount < 0 for amount in amounts):
+                        continue
+                    increment = max(amounts)
+                elif isinstance(counter, (SumCounter, CurrentCounter)):
+                    increment = get_field(data, counter.field)
+                else:
+                    increment = 1
                 # Отсутствующее поле, строка, bool, NaN и бесконечность не увеличивают счетчик.
                 # Для current допустим 0 (баланс мог обнулиться), для прибавления нужны числа больше 0.
                 if not is_number(increment) or (increment < 0 if is_current else increment <= 0):

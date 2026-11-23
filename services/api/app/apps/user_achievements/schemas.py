@@ -35,6 +35,8 @@ class AchievementEventType(StrEnum):
 
     # убили врага или лидера врагов
     ENEMY_KILLED = "enemy.killed"  # EnemyKilledEvent - там враг (целиком) и режим игры
+    ENEMY_PASSIVE_TRIGGERED = "enemy.passive_triggered"
+    ENEMY_EFFECT_PLACED = "enemy.effect_placed"
     ENEMY_SHIELD_REMOVED = "enemy.shield_removed"
     ENEMY_ARMOR_REMOVED = "enemy.armor_removed"
 
@@ -218,6 +220,28 @@ class EnemyEventData(Base):
     mode: LeaderboardGameMode | Literal["normal"]
 
 
+class EnemyPassiveTriggeredData(Base):
+    enemy: dict[str, JsonValue]  # Полный снимок владельца пассивки до эффекта.
+    mode: LeaderboardGameMode | Literal["normal"]
+    location: Literal["field", "deck", "grave"]
+
+
+class EnemyEffectPlacedData(Base):
+    enemy: dict[str, JsonValue]  # Враг, разместивший эффект пассивкой или завещанием.
+    effect: dict[str, JsonValue]  # Полный объект фактически размещённого эффекта.
+    mode: LeaderboardGameMode | Literal["normal"]
+
+
+class EnemyEffectPlacedEvent(Base):
+    type: Literal[AchievementEventType.ENEMY_EFFECT_PLACED]
+    data: EnemyEffectPlacedData
+
+
+class EnemyPassiveTriggeredEvent(Base):
+    type: Literal[AchievementEventType.ENEMY_PASSIVE_TRIGGERED]
+    data: EnemyPassiveTriggeredData
+
+
 class EnemyKilledEvent(Base):
     type: Literal[AchievementEventType.ENEMY_KILLED]
     data: EnemyEventData
@@ -330,6 +354,8 @@ class ResourceTransformedData(Base):
     resource: ResourceType
     # Количество предметов/единиц ресурса, а не число нажатий: quantity * step.
     amount: PositiveAmount
+    # Рецепт одной операции, без умножения на quantity.
+    recipe: dict[ResourceType, StrictInt | Annotated[StrictFloat, Field(allow_inf_nan=False)]]
     # Стоимость и фактический доход этого обмена; без нулевых значений.
     spent: dict[ResourceType, PositiveAmount]
     gained: dict[ResourceType, PositiveAmount]
@@ -356,6 +382,8 @@ AchievementEvent = Annotated[
     | GameLostEvent
     | ActionPlayedEvent
     | EnemyKilledEvent
+    | EnemyPassiveTriggeredEvent
+    | EnemyEffectPlacedEvent
     | EnemyShieldRemovedEvent
     | EnemyArmorRemovedEvent
     | PassiveTriggeredEvent
@@ -409,7 +437,18 @@ class CountCounter(Base):
 # Например, resources.money=500 → value=500 (но не выше target).
 class CurrentCounter(Base):
     type: Literal["current"]
-    field: Annotated[str, Field(min_length=1)]
+    field: Annotated[str, Field(min_length=1)] | None = None
+    fields: list[Annotated[str, Field(min_length=1)]] | None = Field(default=None, min_length=1)
+    aggregation: Literal["max"] | None = None
+
+    @model_validator(mode="after")
+    def validate_source(self) -> "CurrentCounter":
+        if self.field is not None:
+            if self.fields is not None or self.aggregation is not None:
+                raise ValueError("current requires either field or fields with aggregation=max")
+        elif self.fields is None or self.aggregation != "max":
+            raise ValueError("current requires either field or fields with aggregation=max")
+        return self
 
 
 # unique: храним увиденные значения field в state.seen, повторное значение не прибавляет прогресс.
@@ -507,6 +546,16 @@ class AchievementDefinition(Base):
         if isinstance(self.counter, (UniqueCounter, StreakCounter)) and self.target != int(self.target):
             raise ValueError("unique/streak counter requires an integer target")
         if is_current:
+            # Несколько балансов: достаточно, чтобы один из них достиг цели.
+            if self.counter.fields is not None:
+                if self.event != AchievementEventType.RESOURCES_CHECKED:
+                    raise ValueError("current fields/max requires resources.checked")
+                for field in self.counter.fields:
+                    parts = field.split(".")
+                    if len(parts) != 2 or parts[0] != "resources":
+                        raise ValueError("resource current field must be resources.<resource>")
+                    ResourceType(parts[1])
+                return self
             # У серверных снимков заранее известная структура. Проверяем путь еще при чтении конфига.
             parts = self.counter.field.split(".")
             if self.event == AchievementEventType.RESOURCES_CHECKED:
