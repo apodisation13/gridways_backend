@@ -86,7 +86,16 @@ def matches_condition(actual: object, condition: object) -> bool:
 
 
 def matches_filters(data: dict, filters: dict) -> bool:
-    # Для каждой пары «путь → условие» достаем значение и проверяем его.
-    # Все условия соединены через И; пустой словарь не ограничивает событие.
-    # Например, actor.color=Bronze И mode=arena: совпасть должны оба условия.
-    return all(matches_condition(get_field(data, path), condition) for path, condition in filters.items())
+    # Соседние условия — И. Для any достаточно одного подходящего набора И.
+    # Формат (непустой список, без вложенного any) уже проверен схемой конфига.
+    for path, condition in filters.items():
+        if path == "any":
+            matched = any(
+                all(matches_condition(get_field(data, field), rule) for field, rule in group.items())
+                for group in condition
+            )
+            if not matched:
+                return False
+        elif not matches_condition(get_field(data, path), condition):
+            return False
+    return True

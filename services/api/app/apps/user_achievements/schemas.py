@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 
 from lib.utils.schemas import Base
 from lib.utils.schemas.game import LeaderboardGameMode, LevelDifficulty, ResourceType, UpgradeSubtype, UpgradeType
-from pydantic import ConfigDict, Field, JsonValue, StrictBool, StrictFloat, StrictInt, StrictStr, model_validator
+from pydantic import AfterValidator, ConfigDict, Field, JsonValue, StrictBool, StrictFloat, StrictInt, StrictStr, model_validator
 from services.api.app.apps.progress.schemas import UserResources
 
 
@@ -32,6 +32,8 @@ class AchievementEventType(StrEnum):
 
     # сработала пассивка любой карты игрока (в руке, в сбросе, в колоде, лидера, разовая в начале, от игры карты)
     PASSIVE_TRIGGERED = "passive.triggered"  # PassiveTriggeredEvent - данные
+    ARMOR_GAINED = "armor.gained"
+    INVULNERABILITY_GAINED = "invulnerability.gained"
 
     # убили врага или лидера врагов
     ENEMY_KILLED = "enemy.killed"  # EnemyKilledEvent - там враг (целиком) и режим игры
@@ -214,10 +216,31 @@ class PassiveTriggeredEvent(Base):
     data: PassiveTriggeredData
 
 
-class EnemyEventData(Base):
+class EnemyKilledData(Base):
     # Полный снимок до удаления или снятия защиты, для общих фильтров.
     enemy: dict[str, JsonValue]
     mode: LeaderboardGameMode | Literal["normal"]
+    hp_before_death: int | float = Field(allow_inf_nan=False)
+
+
+class ArmorGainedData(Base):
+    amount: PositiveAmount  # Фактически добавленная броня после лимита прокачки.
+    mode: LeaderboardGameMode | Literal["normal"]
+
+
+class ArmorGainedEvent(Base):
+    type: Literal[AchievementEventType.ARMOR_GAINED]
+    data: ArmorGainedData
+
+
+class InvulnerabilityGainedData(Base):
+    amount: PositiveAmount  # Фактически добавленные ходы неуязвимости.
+    mode: LeaderboardGameMode | Literal["normal"]
+
+
+class InvulnerabilityGainedEvent(Base):
+    type: Literal[AchievementEventType.INVULNERABILITY_GAINED]
+    data: InvulnerabilityGainedData
 
 
 class EnemyPassiveTriggeredData(Base):
@@ -244,7 +267,7 @@ class EnemyPassiveTriggeredEvent(Base):
 
 class EnemyKilledEvent(Base):
     type: Literal[AchievementEventType.ENEMY_KILLED]
-    data: EnemyEventData
+    data: EnemyKilledData
 
 
 class EnemyShieldRemovedData(Base):
@@ -387,6 +410,8 @@ AchievementEvent = Annotated[
     | EnemyShieldRemovedEvent
     | EnemyArmorRemovedEvent
     | PassiveTriggeredEvent
+    | ArmorGainedEvent
+    | InvulnerabilityGainedEvent
     | ActorTransformedEvent
     | ResourceSpentEvent
     | ResourceGainedEvent
@@ -498,10 +523,33 @@ FilterCondition = Annotated[
 ]
 
 
+# Внутри any — только обычные наборы условий И, без вложенного any.
+FilterGroup = dict[str, FilterScalar | FilterCondition]
+FilterAlternatives = Annotated[list[FilterGroup], Field(min_length=1)]
+
+
+def validate_filters(filters: dict) -> dict:
+    for path, condition in filters.items():
+        if path == "any":
+            if not isinstance(condition, list):
+                raise ValueError("filters.any must be a non-empty list of filter groups")
+            if any("any" in group for group in condition):
+                raise ValueError("nested filters.any is not supported")
+        elif isinstance(condition, list):
+            raise ValueError("filter group lists are only allowed under any")
+    return filters
+
+
+AchievementFilters = Annotated[
+    dict[str, FilterScalar | FilterCondition | FilterAlternatives],
+    AfterValidator(validate_filters),
+]
+
+
 # Событие и условия, которые обрывают текущую серию. Таких правил может быть несколько.
 class StreakReset(Base):
     event: AchievementEventType
-    filters: dict[str, FilterScalar | FilterCondition] = Field(default_factory=dict)
+    filters: AchievementFilters = Field(default_factory=dict)
 
 
 # streak: length — длина одной серии, а target самого задания — количество полных серий.
@@ -523,7 +571,7 @@ class AchievementDefinition(Base):
         CountCounter | SumCounter | CurrentCounter | UniqueCounter | StreakCounter,
         Field(discriminator="type"),
     ]
-    filters: dict[str, FilterScalar | FilterCondition] = Field(default_factory=dict)
+    filters: AchievementFilters = Field(default_factory=dict)
     rewards: AchievementRewards
     # Метаданные интерфейса; прогресс по-прежнему хранится по id задания.
     group: Annotated[StrictStr, Field(min_length=1, pattern=r"\S")] | None = None
