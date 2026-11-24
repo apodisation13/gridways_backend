@@ -3,7 +3,7 @@ import json
 from services.api.app.apps.user_achievements.logic.filters import is_number
 
 
-def unique_value(value):
+def unique_value(value: object) -> str | int | float | None:
     # Прежние строки/числа остаются прежними; объекты храним стабильной строкой.
     if isinstance(value, str):
         if value.startswith(("object:", "string:")):
@@ -16,7 +16,7 @@ def unique_value(value):
     return None
 
 
-def has_unique_value(seen: list, value, key) -> bool:
+def has_unique_value(seen: list, value: object, key: str | float) -> bool:
     if not isinstance(value, dict):
         return key in seen
     for saved in seen:
@@ -33,7 +33,7 @@ def has_unique_value(seen: list, value, key) -> bool:
     return False
 
 
-def same_json(left, right) -> bool:
+def same_json(left: object, right: object) -> bool:
     # В Python True == 1, но в JSON это разные значения.
     if is_number(left) and is_number(right):
         return left == right
@@ -42,5 +42,5 @@ def same_json(left, right) -> bool:
     if isinstance(left, dict):
         return left.keys() == right.keys() and all(same_json(left[key], right[key]) for key in left)
     if isinstance(left, list):
-        return len(left) == len(right) and all(same_json(a, b) for a, b in zip(left, right))
+        return len(left) == len(right) and all(same_json(a, b) for a, b in zip(left, right, strict=True))
     return left == right

@@ -3,7 +3,17 @@ from typing import Annotated, Literal
 
 from lib.utils.schemas import Base
 from lib.utils.schemas.game import LeaderboardGameMode, LevelDifficulty, ResourceType, UpgradeSubtype, UpgradeType
-from pydantic import AfterValidator, ConfigDict, Field, JsonValue, StrictBool, StrictFloat, StrictInt, StrictStr, model_validator
+from pydantic import (
+    AfterValidator,
+    ConfigDict,
+    Field,
+    JsonValue,
+    StrictBool,
+    StrictFloat,
+    StrictInt,
+    StrictStr,
+    model_validator,
+)
 from services.api.app.apps.progress.schemas import UserResources
 
 
@@ -183,7 +193,7 @@ class GameWonData(Base):
     mode: LeaderboardGameMode | Literal["normal"]
     difficulty: LevelDifficulty
     starting_deck: DeckComposition
-    battleStats: AchievementBattleStats
+    battle_stats: AchievementBattleStats = Field(alias="battleStats")
     enemy_grave: EnemyGraveSummary
 
 
