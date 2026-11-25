@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 from services.api.app.apps.user_achievements.logic.decks import build_deck_summary
 from services.api.app.apps.user_achievements.logic.filters import get_field, is_number, matches_filters
+from services.api.app.apps.user_achievements.logic.unique_values import has_unique_value, unique_value
 from services.api.app.apps.user_achievements.schemas import (
     AchievementDefinition,
     AchievementEvent,
@@ -49,6 +50,25 @@ def apply_events(
     upgrades: dict | None = None,
     decks: dict | None = None,
 ) -> list[GrantedAchievementReward]:
+    # Один раз на пачку готовим списки заданий по событиям и обычные словари фильтров.
+    # Между запросами ничего не кешируем: следующий запрос снова получит актуальный каталог.
+    by_event: dict[AchievementEventType, list[AchievementDefinition]] = {}
+    filters_by_id: dict[str, dict] = {}
+    resets_by_id: dict[str, list[tuple[AchievementEventType, dict]]] = {}
+    for definition in definitions:
+        filters_by_id[definition.id] = definition.model_dump(mode="json", include={"filters"})["filters"]
+        event_types = {definition.event}
+        if isinstance(definition.counter, StreakCounter):
+            resets_by_id[definition.id] = [
+                (reset.event, reset.model_dump(mode="json", include={"filters"})["filters"])
+                for reset in definition.counter.reset
+            ]
+            event_types.update(reset.event for reset in definition.counter.reset)
+        # Set не дает добавить задание дважды, если основное событие совпало со сбросом.
+        # Порядок заданий внутри каждого списка остается таким же, как в каталоге.
+        for event_type in event_types:
+            by_event.setdefault(event_type, []).append(definition)
+
     rewards = []
     # Одно время для всех заданий, которые выполнились в этой пачке событий
     timestamp = datetime.now(UTC).isoformat()
@@ -80,8 +100,12 @@ def apply_events(
         elif event.type == AchievementEventType.DECKS_CHECKED:
             data = {"decks": decks or {}}
 
-        # 3. Перебираем ВЕСЬ плоский список ВСЕХ заданий
-        for definition in definitions:
+        # 3. Берем только задания, для которых это основное событие или сброс серии.
+        for definition in by_event.get(event.type, []):
+            # Награжденное задание уже не меняется: не проверяем даже его фильтры и сбросы.
+            state = progress.get("permanent", {}).get(definition.id)
+            if state is not None and state.get("reward_granted_at") is not None:
+                continue
             # 4. current — проверка текущего состояния, например «иметь 1000 денег».
             # Обычное игровое событие не должно менять такой счетчик.
             is_current = isinstance(definition.counter, CurrentCounter)
@@ -96,12 +120,8 @@ def apply_events(
             # Например, задание считает game.won, но сбрасывает текущую серию на game.lost.
             if isinstance(counter, StreakCounter):
                 if any(
-                    reset.event == event.type
-                    and matches_filters(
-                        data,
-                        reset.model_dump(mode="json")["filters"],
-                    )
-                    for reset in counter.reset
+                    reset_event == event.type and matches_filters(data, reset_filters)
+                    for reset_event, reset_filters in resets_by_id[definition.id]
                 ):
                     state = progress.get("permanent", {}).get(definition.id)
                     # Здесь не создаем запись задания, если ее еще нет.
@@ -118,9 +138,9 @@ def apply_events(
 
             # 6. Проверяем ВСЕ фильтры задания. Например, событие action.played подходит по типу,
             # но задание только для Bronze — Silver его не продвинет.
-            # model_dump превращает модели условий в словари, которые понимает matches_filters.
+            # Словари условий подготовлены выше один раз, а не заново для каждого события.
             # Пути и операторы одинаковы с фронтом: actor.color, actor.data.damage и т.д.
-            filters = definition.model_dump(mode="json")["filters"]
+            filters = filters_by_id[definition.id]
             if not matches_filters(data, filters):
                 continue
 
@@ -135,10 +155,6 @@ def apply_events(
                 {"value": 0, "completed_at": None, "reward_granted_at": None},
             )
 
-            # 9. Если награда за это задание уже выдана — больше его не считаем
-            if state.get("reward_granted_at") is not None:
-                continue
-
             # 10. Выбираем способ подсчета, который указан в конфиге задания.
             if isinstance(counter, StreakCounter):
                 # streak: считаем события подряд. length — длина одной серии, target — число полных серий.
@@ -152,13 +168,13 @@ def apply_events(
             elif isinstance(definition.counter, UniqueCounter):
                 # unique: считаем разные значения поля, а не количество событий.
                 # Например, actor.id: карта 7, карта 7, карта 9 дадут прогресс 2, а не 3.
-                item = get_field(data, definition.counter.field)
-                # Только названия и числовые ID; bool/null/объекты не являются ID.
-                if not isinstance(item, str) and not is_number(item):
+                raw = get_field(data, definition.counter.field)
+                item = unique_value(raw)
+                if item is None:
                     continue
                 # seen сохраняется в progress и попадет в БД, поэтому уникальность работает между запросами.
                 seen = state.setdefault("seen", [])
-                if item in seen:
+                if has_unique_value(seen, raw, item):
                     continue
                 seen.append(item)
                 state["value"] = min(definition.target, len(seen))
@@ -166,11 +182,15 @@ def apply_events(
                 # count: +1 за событие. sum: прибавляем число из counter.field, например resources.money.
                 # current: тем же способом читаем поле, но дальше ЗАМЕНЯЕМ счетчик текущим значением.
                 # get_field понимает вложенные пути: actor.data.damage, starting_deck.summary.cards_count.
-                increment = (
-                    get_field(data, definition.counter.field)
-                    if isinstance(definition.counter, (SumCounter, CurrentCounter))
-                    else 1
-                )
+                if isinstance(counter, CurrentCounter) and counter.fields is not None:
+                    amounts = [get_field(data, field) for field in counter.fields]
+                    if any(not is_number(amount) or amount < 0 for amount in amounts):
+                        continue
+                    increment = max(amounts)
+                elif isinstance(counter, (SumCounter, CurrentCounter)):
+                    increment = get_field(data, counter.field)
+                else:
+                    increment = 1
                 # Отсутствующее поле, строка, bool, NaN и бесконечность не увеличивают счетчик.
                 # Для current допустим 0 (баланс мог обнулиться), для прибавления нужны числа больше 0.
                 if not is_number(increment) or (increment < 0 if is_current else increment <= 0):
