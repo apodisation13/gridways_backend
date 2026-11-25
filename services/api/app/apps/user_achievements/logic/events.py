@@ -50,6 +50,25 @@ def apply_events(
     upgrades: dict | None = None,
     decks: dict | None = None,
 ) -> list[GrantedAchievementReward]:
+    # Один раз на пачку готовим списки заданий по событиям и обычные словари фильтров.
+    # Между запросами ничего не кешируем: следующий запрос снова получит актуальный каталог.
+    by_event: dict[AchievementEventType, list[AchievementDefinition]] = {}
+    filters_by_id: dict[str, dict] = {}
+    resets_by_id: dict[str, list[tuple[AchievementEventType, dict]]] = {}
+    for definition in definitions:
+        filters_by_id[definition.id] = definition.model_dump(mode="json", include={"filters"})["filters"]
+        event_types = {definition.event}
+        if isinstance(definition.counter, StreakCounter):
+            resets_by_id[definition.id] = [
+                (reset.event, reset.model_dump(mode="json", include={"filters"})["filters"])
+                for reset in definition.counter.reset
+            ]
+            event_types.update(reset.event for reset in definition.counter.reset)
+        # Set не дает добавить задание дважды, если основное событие совпало со сбросом.
+        # Порядок заданий внутри каждого списка остается таким же, как в каталоге.
+        for event_type in event_types:
+            by_event.setdefault(event_type, []).append(definition)
+
     rewards = []
     # Одно время для всех заданий, которые выполнились в этой пачке событий
     timestamp = datetime.now(UTC).isoformat()
@@ -81,8 +100,12 @@ def apply_events(
         elif event.type == AchievementEventType.DECKS_CHECKED:
             data = {"decks": decks or {}}
 
-        # 3. Перебираем ВЕСЬ плоский список ВСЕХ заданий
-        for definition in definitions:
+        # 3. Берем только задания, для которых это основное событие или сброс серии.
+        for definition in by_event.get(event.type, []):
+            # Награжденное задание уже не меняется: не проверяем даже его фильтры и сбросы.
+            state = progress.get("permanent", {}).get(definition.id)
+            if state is not None and state.get("reward_granted_at") is not None:
+                continue
             # 4. current — проверка текущего состояния, например «иметь 1000 денег».
             # Обычное игровое событие не должно менять такой счетчик.
             is_current = isinstance(definition.counter, CurrentCounter)
@@ -97,12 +120,8 @@ def apply_events(
             # Например, задание считает game.won, но сбрасывает текущую серию на game.lost.
             if isinstance(counter, StreakCounter):
                 if any(
-                    reset.event == event.type
-                    and matches_filters(
-                        data,
-                        reset.model_dump(mode="json")["filters"],
-                    )
-                    for reset in counter.reset
+                    reset_event == event.type and matches_filters(data, reset_filters)
+                    for reset_event, reset_filters in resets_by_id[definition.id]
                 ):
                     state = progress.get("permanent", {}).get(definition.id)
                     # Здесь не создаем запись задания, если ее еще нет.
@@ -119,9 +138,9 @@ def apply_events(
 
             # 6. Проверяем ВСЕ фильтры задания. Например, событие action.played подходит по типу,
             # но задание только для Bronze — Silver его не продвинет.
-            # model_dump превращает модели условий в словари, которые понимает matches_filters.
+            # Словари условий подготовлены выше один раз, а не заново для каждого события.
             # Пути и операторы одинаковы с фронтом: actor.color, actor.data.damage и т.д.
-            filters = definition.model_dump(mode="json")["filters"]
+            filters = filters_by_id[definition.id]
             if not matches_filters(data, filters):
                 continue
 
@@ -135,10 +154,6 @@ def apply_events(
                 definition.id,
                 {"value": 0, "completed_at": None, "reward_granted_at": None},
             )
-
-            # 9. Если награда за это задание уже выдана — больше его не считаем
-            if state.get("reward_granted_at") is not None:
-                continue
 
             # 10. Выбираем способ подсчета, который указан в конфиге задания.
             if isinstance(counter, StreakCounter):
